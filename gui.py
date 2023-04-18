@@ -33,7 +33,8 @@ class App:
         self.dones_filter_checkbox = None
         self.window = None
         self.ui_colors = {}
-        self.quests_by_region = quests_by_region
+        # Sorting the quest_by_region dict by their keys
+        self.quests_by_region = {k: quests_by_region[k] for k in sorted(quests_by_region.keys())}
         self.init_ui()
 
     # self.counter will also update the counter label in the toolbar when its value is updated
@@ -119,7 +120,7 @@ class App:
         hbox.addStretch(1)
 
         # Add the buttons to the layout
-        for i, region in enumerate(sorted(self.quests_by_region.keys())):
+        for i, region in enumerate(self.quests_by_region.keys()):
             self.ui_colors[region] = BACKGROUND_COLORS[i]
             quests = self.quests_by_region[region]
             button = QtWidgets.QPushButton(region.replace('_', ' ').upper())
