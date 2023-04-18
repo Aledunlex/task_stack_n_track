@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import QToolBar
 from db_handler import update_quest_done
 
 # One color per game region
+from quest import Quest
+
 BACKGROUND_COLORS = ['#e6194b', '#3cb44b', '#ffe119', '#0082c8',
                      '#f58231', '#911eb4', '#46f0f0', '#f032e6']
 
@@ -27,20 +29,45 @@ def highlight_search_text(text, search_text):
 class App:
     def __init__(self, quests_by_region):
         super().__init__()
+        self._counter = None
         self.dones_filter_checkbox = None
         self.window = None
         self.ui_colors = {}
         self.quests_by_region = quests_by_region
         self.init_ui()
 
+    # self.counter will also update the counter label in the toolbar when its value is updated
+    @property
+    def counter(self):
+        return self._counter
+
+    @counter.setter
+    def counter(self, value):
+        self._counter = value
+        # Update the counter label in the toolbar
+        counter_label = self.window.findChild(QtWidgets.QLabel)
+        element_str = Quest.__name__.lower() + ('s' if self.counter != 1 else '')
+        counter_label.setText(f'Displaying {self.counter} {element_str}')
+
     def init_ui(self):
         app = QtWidgets.QApplication([])
         window = self.window = QtWidgets.QMainWindow()
         window.setWindowTitle('Quest Viewer')
-        window.showMaximized()
+        # showMaximized may not work on all platforms
+        if hasattr(window, 'showMaximized'):
+            window.showMaximized()
 
         # Create toolbar for the search functionality
         self.create_search_bar()
+
+        window.addToolBarBreak()
+
+        # Create a toolbar that only shows the value of the counter
+        counter_toolbar = window.addToolBar('Counter')
+        counter_label = QtWidgets.QLabel()
+        counter_toolbar.addWidget(counter_label)
+
+        window.addToolBarBreak()
 
         # Toolbar for region buttons
         self.create_region_toolbar()
@@ -49,7 +76,9 @@ class App:
         central_widget = QtWidgets.QWidget()
         window.setCentralWidget(central_widget)
 
-        # Show window
+        all_quests = [quest for quests in self.quests_by_region.values() for quest in quests]
+        self.view_quests_from(all_quests, self.dones_filter_checkbox.isChecked())
+
         window.show()
         app.exec_()
 
@@ -83,7 +112,7 @@ class App:
         window = self.window
         region_toolbar = QToolBar()
         region_toolbar.setIconSize(QSize(32, 32))
-        window.addToolBarBreak()
+
         window.addToolBar(Qt.TopToolBarArea, region_toolbar)
         # Create a horizontal layout to hold the buttons
         hbox = QtWidgets.QHBoxLayout()
@@ -116,6 +145,7 @@ class App:
 
     def view_quests_from(self, quests, filter_dones, search_text=None):
         central_widget = self.window.centralWidget()
+        self.counter = 0
         old_layout = central_widget.layout()
         if old_layout is not None:
             QtWidgets.QWidget().setLayout(old_layout)
@@ -134,8 +164,13 @@ class App:
         for quest in quests:
             if filter_dones and quest.done:
                 continue
+            self.counter += 1
+            region_color = self.ui_colors[quest.region]
             quest_widget = QtWidgets.QGroupBox()
-            quest_widget.setStyleSheet('QGroupBox {background-color: beige; border-radius: 5px;}')
+            quest_widget.setStyleSheet(
+                'background-color: #COLOR; color: #TEXT; border-radius: 5px;'
+                    .replace('#COLOR', region_color).replace('#TEXT', get_text_color(region_color))
+            )
             quest_layout = QtWidgets.QHBoxLayout()
             quest_widget.setLayout(quest_layout)
 
@@ -149,7 +184,7 @@ class App:
             quest_layout.addLayout(text_layout)
 
             title_label = QtWidgets.QLabel()
-            title_label.setStyleSheet('font-size: 18px; font-weight: bold;')
+            title_label.setStyleSheet('font-size: 20px; font-weight: bold;')
             title_label.setAlignment(QtCore.Qt.AlignCenter)
             title_label.setWordWrap(True)
             title_label.setTextFormat(QtCore.Qt.RichText)
@@ -164,6 +199,7 @@ class App:
             text_layout.addWidget(reward_label)
 
             solution_label = QtWidgets.QLabel()
+            solution_label.setStyleSheet('font-size: 15px')
             solution_label.setWordWrap(True)
             solution_label.setTextFormat(QtCore.Qt.RichText)
             solution_label.setText(highlight_search_text(quest.solution, search_text))
@@ -195,3 +231,5 @@ class App:
                     matching_quests.append(quest)
 
         self.view_quests_from(matching_quests, filter_dones, search_text)
+
+
