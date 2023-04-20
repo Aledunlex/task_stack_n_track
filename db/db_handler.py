@@ -5,14 +5,11 @@ from pathlib import Path
 
 from PyQt5 import QtCore
 
-from model.element import Quest
-
 DATABASE = 'DATABASE'
 
 
 def populate_db(all_elements):
     # Check if the DATABASE directory exists and isn't empty.
-    print("populating?")
     if not os.path.exists(DATABASE) or not os.listdir(DATABASE):
         os.makedirs(DATABASE, exist_ok=True)
         print(f"Creating {DATABASE} folder")
@@ -42,20 +39,14 @@ def populate_db(all_elements):
                 raise
 
 
-def create_quests_from_json():
+def create_elements_from_json(element_class):
     quests = []
     for filename in os.listdir(DATABASE):
         if filename.endswith('.json'):
             with open(os.path.join(DATABASE, filename), 'r') as f:
                 data = json.load(f)
-                for quest_data in data:
-                    category = quest_data['category']
-                    title = quest_data['title']
-                    reward = quest_data['reward']
-                    solution = quest_data['solution']
-                    done = quest_data.get('done') == 'True'
-                    quest = Quest(category=category, title=title, reward=reward, solution=solution, done=done)
-                    quests.append(quest)
+                result = element_class.get_element_instances_from(data)
+                quests.extend(result)
     return quests
 
 

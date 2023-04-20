@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
+from typing import List
 
 import requests
 from bs4 import BeautifulSoup
-from typing import List
 
 from model.element import Element, Quest
 
@@ -12,23 +12,18 @@ class Scraper(ABC):
         self.element_class = element_class
 
     @abstractmethod
-    def parse_elements_from(self) -> List[dict]:
+    def scrape(self) -> List[dict]:
         pass
 
-    def get_element_instances_from(self, all_data) -> List[Element]:
-        all_elements = []
-        for data in all_data:
-            element = self.element_class(**data)
-            all_elements.append(element)
-
-        return all_elements
+    def get_element_instances_from(self, all_data: List[dict]) -> List[Element]:
+        return self.element_class.get_element_instances_from(all_data)
 
 
 class QuestScraper(Scraper):
     def __init__(self):
         super().__init__(Quest)
 
-    def parse_elements_from(self) -> List[dict]:
+    def scrape(self) -> List[dict]:
         url = 'https://www.jeuxvideo.com/wikis-soluce-astuces/1716911/quetes-annexes.htm'
 
         all_data = []
@@ -48,13 +43,11 @@ class QuestScraper(Scraper):
 
             for h2 in region_soup.find_all('h2', class_='h2-default-jv'):
                 title = h2.text.strip()
-                # reward is the next p tag after the h2 that starts with "Récompense", but it's not always present
                 reward = ''
                 for p in h2.find_next_siblings('p'):
                     if p.text.startswith('Récompense'):
                         reward = p.text
                         break
-                # if there is a reward, solution is the p tag after that, otherwise it's the p tag immediately after the h2
                 if reward:
                     solution = h2.find_next_sibling('p').find_next_sibling('p').text.strip()
                 else:

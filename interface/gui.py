@@ -1,13 +1,9 @@
 import re
 
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtWidgets import QToolBar
-from typing import Dict
 
 from db.db_handler import update_element_check
-from interface.displayable import Category
-from model.element import Element
 
 
 def highlight_search_text(text, search_text):
@@ -44,10 +40,9 @@ class App:
     def init_ui(self):
         app = QtWidgets.QApplication([])
         window = self.window = QtWidgets.QMainWindow()
-        window.setWindowTitle('Quest Viewer')
-        # showMaximized may not work on all platforms
-        if hasattr(window, 'showMaximized'):
-            window.showMaximized()
+
+        type_of_element = next(iter(self.elems_by_categ.values()))[0].__class__.__name__
+        window.setWindowTitle(f'{type_of_element} Viewer')
 
         # Create toolbar for the search functionality
         self.create_search_bar()
@@ -61,17 +56,20 @@ class App:
 
         window.addToolBarBreak()
 
-        # Toolbar for region buttons
-        self.create_region_toolbar()
+        # Toolbar for categories buttons
+        self.create_categories_toolbar()
 
         # Create central widget
         central_widget = QtWidgets.QWidget()
         window.setCentralWidget(central_widget)
 
-        all_quests = [quest for quests in self.elems_by_categ.values() for quest in quests]
-        self.view_elements_in(all_quests, self.dones_filter_checkbox.isChecked())
+        all_elements = [element for elements in self.elems_by_categ.values() for element in elements]
+        self.view_elements_in(all_elements, self.dones_filter_checkbox.isChecked())
 
-        window.show()
+        if hasattr(window, 'showMaximized'):
+            window.showMaximized()
+        else:
+            window.show()
         app.exec_()
 
     def create_search_bar(self):
@@ -79,7 +77,7 @@ class App:
         toolbar = window.addToolBar('Toolbar')
         # Create search bar
         search_bar = QtWidgets.QLineEdit()
-        search_bar.setPlaceholderText('Search quests...')
+        search_bar.setPlaceholderText('Search elements...')
         toolbar.addWidget(search_bar)
         # Create tag combo box
         tag_combo_box = QtWidgets.QComboBox()
@@ -98,21 +96,21 @@ class App:
                                      dones_filter_checkbox.isChecked()))
         dones_filter_checkbox.stateChanged.connect(
             lambda state: self.search(self.elems_by_categ, search_bar.text(), tag_combo_box.currentText(),
-                                      state == QtCore.Qt.Checked))
+                                      state == Qt.Checked))
 
-    def create_region_toolbar(self):
+    def create_categories_toolbar(self):
         window = self.window
-        region_toolbar = QToolBar()
-        region_toolbar.setIconSize(QSize(32, 32))
+        category_toolbar = QtWidgets.QToolBar()
+        category_toolbar.setIconSize(QSize(32, 32))
 
-        window.addToolBar(Qt.TopToolBarArea, region_toolbar)
+        window.addToolBar(Qt.TopToolBarArea, category_toolbar)
         # Create a horizontal layout to hold the buttons
         hbox = QtWidgets.QHBoxLayout()
         hbox.addStretch(1)
 
         # Add the buttons to the layout
         for i, category in enumerate(self.elems_by_categ.keys()):
-            quests = self.elems_by_categ[category]
+            elements = self.elems_by_categ[category]
             button = QtWidgets.QPushButton(category.value.replace('_', ' ').upper())
             button_style = """
             QPushButton {
@@ -125,13 +123,13 @@ class App:
             }""".replace('#COLOR', category.background_color).replace('#TEXT', category.get_text_color())
             button.setStyleSheet(button_style)
             button.clicked.connect(
-                lambda checked, q=quests: self.view_elements_in(q, self.dones_filter_checkbox.isChecked()))
+                lambda checked, q=elements: self.view_elements_in(q, self.dones_filter_checkbox.isChecked()))
             hbox.addWidget(button)
         hbox.addStretch(1)
         # Create a widget to hold the layout and add it to the toolbar
         widget = QtWidgets.QWidget()
         widget.setLayout(hbox)
-        region_toolbar.addWidget(widget)
+        category_toolbar.addWidget(widget)
 
     def view_elements_in(self, elements, filter_dones, search_text=None):
         central_widget = self.window.centralWidget()
@@ -178,8 +176,8 @@ class App:
                 attribute = element.__getattribute__(attribute)
                 attribute_label = QtWidgets.QLabel()
                 attribute_label.setWordWrap(attribute.word_wrap)
-                attribute_label.setTextFormat(QtCore.Qt.RichText if attribute.text_format.lower() == "rich"
-                                              else QtCore.Qt.PlainText)
+                attribute_label.setTextFormat(Qt.RichText if attribute.text_format.lower() == "rich"
+                                              else Qt.PlainText)
                 style_sheet_content = ''
                 if attribute.font_size:
                     style_sheet_content += 'font-size: {}px;'.format(attribute.font_size)

@@ -1,5 +1,6 @@
 import os
 from abc import ABC, abstractmethod
+from typing import List
 
 from interface.displayable import Displayable, Category
 
@@ -7,16 +8,27 @@ DATABASE = "DATABASE"
 
 
 class Element(ABC):
-    def __init__(self, category, title, done=False):
+    def __init__(self, category, title, done=None):
         self.category = Category(category)
         self.title = Displayable(title)
-        self.done = done
+        if done is None:
+            self.done = False
+        else:
+            self.done = done == 'True'
 
     def to_dict(self):
         return {attr: str(getattr(self, attr)) for attr in dir(self)
                 if not attr.startswith('__')
                 and not callable(getattr(self, attr))
                 and not (isinstance(getattr(self, attr), ABC) or attr == '_abc_impl')}
+
+    @classmethod
+    def get_element_instances_from(cls, all_data: List[dict]):
+        all_elements = []
+        for data in all_data:
+            element = cls(**data)
+            all_elements.append(element)
+        return all_elements
 
     def get_displayable_attributes(self):
         """Returns a list of the attributes that are instances of Displayable,
