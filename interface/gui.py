@@ -5,7 +5,7 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QToolBar
 
 from db_handler import update_element_check
-from model.displayable import Category
+from interface.displayable import Category
 from model.element import Element
 
 
@@ -177,7 +177,7 @@ class App:
                 attribute = element.__getattribute__(attribute)
                 attribute_label = QtWidgets.QLabel()
                 attribute_label.setWordWrap(attribute.word_wrap)
-                attribute_label.setTextFormat(QtCore.Qt.RichText if attribute.text_format.lower() == "richtext"
+                attribute_label.setTextFormat(QtCore.Qt.RichText if attribute.text_format.lower() == "rich"
                                               else QtCore.Qt.PlainText)
                 style_sheet_content = ''
                 if attribute.font_size:

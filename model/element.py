@@ -1,7 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 
-from model.displayable import Displayable, Category
+from interface.displayable import Displayable, Category
 
 DATABASE = "DATABASE"
 
@@ -14,7 +14,9 @@ class Element(ABC):
 
     def to_dict(self):
         return {attr: str(getattr(self, attr)) for attr in dir(self)
-                if not attr.startswith('__') and not callable(getattr(self, attr))}
+                if not attr.startswith('__')
+                and not callable(getattr(self, attr))
+                and not (isinstance(getattr(self, attr), ABC) or attr == '_abc_impl')}
 
     def get_displayable_attributes(self):
         """Returns a list of the attributes that are instances of Displayable,
