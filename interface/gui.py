@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QToolBar
 
-from db_handler import update_quest_done
+from db_handler import update_element_check
 from model.displayable import Category
 from model.element import Element
 
@@ -68,7 +68,7 @@ class App:
         window.setCentralWidget(central_widget)
 
         all_quests = [quest for quests in self.elems_by_categ.values() for quest in quests]
-        self.view_quests_from(all_quests, self.dones_filter_checkbox.isChecked())
+        self.view_elements_in(all_quests, self.dones_filter_checkbox.isChecked())
 
         window.show()
         app.exec_()
@@ -90,14 +90,14 @@ class App:
         toolbar.addWidget(dones_filter_checkbox)
         # Connect search bar and tag combo box signals
         search_bar.textChanged.connect(
-            lambda text: self.search_quests(self.elems_by_categ, text, tag_combo_box.currentText(),
-                                            dones_filter_checkbox.isChecked()))
+            lambda text: self.search(self.elems_by_categ, text, tag_combo_box.currentText(),
+                                     dones_filter_checkbox.isChecked()))
         tag_combo_box.currentTextChanged.connect(
-            lambda text: self.search_quests(self.elems_by_categ, search_bar.text(), text,
-                                            dones_filter_checkbox.isChecked()))
+            lambda text: self.search(self.elems_by_categ, search_bar.text(), text,
+                                     dones_filter_checkbox.isChecked()))
         dones_filter_checkbox.stateChanged.connect(
-            lambda state: self.search_quests(self.elems_by_categ, search_bar.text(), tag_combo_box.currentText(),
-                                             state == QtCore.Qt.Checked))
+            lambda state: self.search(self.elems_by_categ, search_bar.text(), tag_combo_box.currentText(),
+                                      state == QtCore.Qt.Checked))
 
     def create_region_toolbar(self):
         window = self.window
@@ -124,7 +124,7 @@ class App:
             }""".replace('#COLOR', category.background_color).replace('#TEXT', category.get_text_color())
             button.setStyleSheet(button_style)
             button.clicked.connect(
-                lambda checked, q=quests: self.view_quests_from(q, self.dones_filter_checkbox.isChecked()))
+                lambda checked, q=quests: self.view_elements_in(q, self.dones_filter_checkbox.isChecked()))
             hbox.addWidget(button)
         hbox.addStretch(1)
         # Create a widget to hold the layout and add it to the toolbar
@@ -132,7 +132,7 @@ class App:
         widget.setLayout(hbox)
         region_toolbar.addWidget(widget)
 
-    def view_quests_from(self, quests, filter_dones, search_text=None):
+    def view_elements_in(self, elements, filter_dones, search_text=None):
         central_widget = self.window.centralWidget()
         self.counter = 0
         old_layout = central_widget.layout()
@@ -150,34 +150,34 @@ class App:
         scroll_area_layout = QtWidgets.QVBoxLayout()
         scroll_area_widget.setLayout(scroll_area_layout)
 
-        for quest in quests:
-            if filter_dones and quest.done:
+        for element in elements:
+            if filter_dones and element.done:
                 continue
             self.counter += 1
-            region_color = quest.category.background_color
-            quest_widget = QtWidgets.QGroupBox()
-            quest_widget.setStyleSheet(
-                'background-color: #COLOR; color: #TEXT; border-radius: 5px;'.replace('#COLOR', region_color).replace(
-                    '#TEXT', quest.category.get_text_color())
+            category_color = element.category.background_color
+            element_widget = QtWidgets.QGroupBox()
+            element_widget.setStyleSheet(
+                'background-color: #COLOR; color: #TEXT; border-radius: 5px;'.replace('#COLOR', category_color).replace(
+                    '#TEXT', element.category.get_text_color())
             )
-            quest_layout = QtWidgets.QHBoxLayout()
-            quest_widget.setLayout(quest_layout)
+            element_layout = QtWidgets.QHBoxLayout()
+            element_widget.setLayout(element_layout)
 
             done_checkbox = QtWidgets.QCheckBox()
             done_checkbox.setFixedSize(32, 32)
-            done_checkbox.setChecked(quest.done)
-            done_checkbox.stateChanged.connect(lambda state, q=quest: update_quest_done(q, state))
-            quest_layout.addWidget(done_checkbox)
+            done_checkbox.setChecked(element.done)
+            done_checkbox.stateChanged.connect(lambda state, e=element: update_element_check(e, state))
+            element_layout.addWidget(done_checkbox)
 
             text_layout = QtWidgets.QVBoxLayout()
-            quest_layout.addLayout(text_layout)
+            element_layout.addLayout(text_layout)
 
-            # Iterating over the attributes of the quest that inherit the Displayable class
-            for attribute in quest.get_displayable_attributes():
-                attribute = quest.__getattribute__(attribute)
+            # Iterating over the attributes of the element that inherit the Displayable class
+            for attribute in element.get_displayable_attributes():
+                attribute = element.__getattribute__(attribute)
                 attribute_label = QtWidgets.QLabel()
                 attribute_label.setWordWrap(attribute.word_wrap)
-                attribute_label.setTextFormat(QtCore.Qt.RichText if attribute.text_format == "RichText"
+                attribute_label.setTextFormat(QtCore.Qt.RichText if attribute.text_format.lower() == "richtext"
                                               else QtCore.Qt.PlainText)
                 style_sheet_content = ''
                 if attribute.font_size:
@@ -190,33 +190,32 @@ class App:
                     style_sheet_content += 'background-color: {};'.format(attribute.background_color)
                 if attribute.alignment:
                     style_sheet_content += 'text-align: {};'.format(attribute.alignment)
-                attribute_label.setText(attribute.value)
                 attribute_label.setStyleSheet(style_sheet_content)
+                attribute_label.setText(highlight_search_text(attribute.value, search_text))
                 text_layout.addWidget(attribute_label)
 
-            scroll_area_layout.addWidget(quest_widget)
+            scroll_area_layout.addWidget(element_widget)
 
         spacer_item = QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         scroll_area_layout.addItem(spacer_item)
 
         central_widget.update()
 
-    def search_quests(self, quests_by_region, search_text, search_tag, filter_dones):
+    def search(self, elements_by_category, search_text, search_tag, filter_dones):
         if not search_text:
-            # quests by region is a dictionary of lists, so we need to flatten it
-            all_quests = [quest for quests in quests_by_region.values() for quest in quests]
-            self.view_quests_from(all_quests, filter_dones)
+            all_elements = [element for elements in elements_by_category.values() for element in elements]
+            self.view_elements_in(all_elements, filter_dones)
             return
 
         search_text = search_text.lower()
-        matching_quests = []
+        matching_elements = []
         pattern = re.compile(search_text)
-        for region, quests in quests_by_region.items():
-            for quest in quests:
-                if filter_dones and quest.done:
+        for category, elements in elements_by_category.items():
+            for element in elements:
+                if filter_dones and element.done:
                     continue
-                quest_text = getattr(quest, search_tag).lower()
-                if pattern.search(quest_text):
-                    matching_quests.append(quest)
+                element_text = getattr(element, search_tag).value.lower()
+                if pattern.search(element_text):
+                    matching_elements.append(element)
 
-        self.view_quests_from(matching_quests, filter_dones, search_text)
+        self.view_elements_in(matching_elements, filter_dones, search_text)
