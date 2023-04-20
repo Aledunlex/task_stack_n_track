@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 import requests
 from bs4 import BeautifulSoup
+from typing import List
 
 from model.element import Element, Quest
 
@@ -11,12 +12,10 @@ class Scraper(ABC):
         self.element_class = element_class
 
     @abstractmethod
-    def parse_elements_from(self) -> list[dict]:
+    def parse_elements_from(self) -> List[dict]:
         pass
 
-    def get_element_instances_from(self) -> list[Element]:
-        all_data = self.get_element_instances_from()
-
+    def get_element_instances_from(self, all_data) -> List[Element]:
         all_elements = []
         for data in all_data:
             element = self.element_class(**data)
@@ -29,7 +28,7 @@ class QuestScraper(Scraper):
     def __init__(self):
         super().__init__(Quest)
 
-    def parse_elements_from(self) -> list[dict]:
+    def parse_elements_from(self) -> List[dict]:
         url = 'https://www.jeuxvideo.com/wikis-soluce-astuces/1716911/quetes-annexes.htm'
 
         all_data = []

@@ -51,11 +51,14 @@ class Quest(Element):
 
     def __init_category(self):
         category = self.category
-        for i, filename in enumerate(os.listdir(DATABASE)):
-            if category.value.lower() in filename.lower():
-                color = Category.get_colors()[i % len(Category.get_colors())]
-                self.category.set_background_color(color)
-                break
+        try:
+            for i, filename in enumerate(os.listdir(DATABASE)):
+                if category.value.lower() in filename.lower():
+                    color = Category.get_colors()[i % len(Category.get_colors())]
+                    self.category.set_background_color(color)
+                    break
+        except FileNotFoundError:
+            pass
 
     def __init_title(self):
         title = self.title

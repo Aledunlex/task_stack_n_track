@@ -3,8 +3,9 @@ import re
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QToolBar
+from typing import Dict
 
-from db_handler import update_element_check
+from db.db_handler import update_element_check
 from interface.displayable import Category
 from model.element import Element
 
@@ -17,7 +18,7 @@ def highlight_search_text(text, search_text):
 
 
 class App:
-    def __init__(self, elems_by_categ: dict[Category, list[Element]]):
+    def __init__(self, elems_by_categ):
         super().__init__()
         self._counter = None
         self.dones_filter_checkbox = None

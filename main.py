@@ -1,6 +1,6 @@
-import db_handler
+from db import db_handler
 from interface import gui
-from db_handler import populate_db
+from db.db_handler import populate_db
 from scraping.scraper import QuestScraper
 
 
@@ -12,17 +12,21 @@ def create_quests_by_region():
         if category not in elements_by_category:
             elements_by_category[category] = []
         elements_by_category[category].append(element)
+    print(len(all_elements))
     return elements_by_category
 
 
 def main():
-    quest_scraper = QuestScraper()
     try:
-        populate_db(quest_scraper.get_element_instances_from())
-    except FileNotFoundError:
+        elems_by_category = create_quests_by_region()
+    except FileNotFoundError as e:
+        print(f"Error: {e}. Creating new database...")
         quest_scraper = QuestScraper()
-        populate_db(quest_scraper.parse_elements_from())
-    elems_by_category = create_quests_by_region()
+        element_dics = quest_scraper.parse_elements_from()
+        all_data = quest_scraper.get_element_instances_from(element_dics)
+        populate_db(all_data)
+        elems_by_category = create_quests_by_region()
+
     gui.App(elems_by_category)
 
 
