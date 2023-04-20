@@ -14,8 +14,8 @@ class Scraper(ABC):
     def parse_elements_from(self) -> list[dict]:
         pass
 
-    def get_element_instances_from(self, url) -> list[Element]:
-        all_data = self.get_element_instances_from(url)
+    def get_element_instances_from(self) -> list[Element]:
+        all_data = self.get_element_instances_from()
 
         all_elements = []
         for data in all_data:

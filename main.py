@@ -17,8 +17,11 @@ def create_quests_by_region():
 
 def main():
     quest_scraper = QuestScraper()
-
-    populate_db(quest_scraper.parse_elements_from())
+    try:
+        populate_db(quest_scraper.get_element_instances_from())
+    except FileNotFoundError:
+        quest_scraper = QuestScraper()
+        populate_db(quest_scraper.parse_elements_from())
     elems_by_category = create_quests_by_region()
     gui.App(elems_by_category)
 
