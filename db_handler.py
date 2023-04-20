@@ -6,7 +6,6 @@ from pathlib import Path
 from PyQt5 import QtCore
 
 from model.element import Quest
-from scraping.scraper import get_quests
 
 DATABASE = 'DATABASE'
 
@@ -28,57 +27,53 @@ def create_quests_from_json():
     return quests
 
 
-def update_quest_done(quest, state):
-    quest.done = state == QtCore.Qt.Checked
-    # Find the JSON file corresponding to the quest
+def update_element_check(element, state):
+    element.done = state == QtCore.Qt.Checked
+    # Find the JSON file corresponding to the element
     for filename in os.listdir(DATABASE):
-        if quest.category.value in filename:
+        if element.category.value in filename:
             # Update the matching JSON file
             joined_filepath = os.path.join(DATABASE, filename)
             with open(joined_filepath, 'r') as f:
                 data = json.load(f)
-            for quest_data in data:
-                if quest_data['title'] == quest.title:
-                    quest_data['done'] = quest.done
-                    print(f"{quest.title} is {'not ' if not quest.done else ''}done.")
+            for element_data in data:
+                if element_data['title'] == element.title:
+                    element_data['done'] = element.done
+                    print(f"{element.title} is {'not ' if not element.done else ''}done.")
                     break
             with open(joined_filepath, 'w') as f:
                 json.dump(data, f)
                 break
 
 
-def populate_db():
-    # Check if the DATABASE directory exists and contains 8 JSON files.
-    if not (os.path.exists(DATABASE) and len(os.listdir(DATABASE)) == 8):
-        # Create the DATABASE directory if it doesn't exist.
+def populate_db(all_elements):
+    # Check if the DATABASE directory exists and isn't empty.
+    if not os.path.exists(DATABASE) or not os.listdir(DATABASE):
         os.makedirs(DATABASE, exist_ok=True)
         print(f"Creating {DATABASE} folder")
 
-        url = 'https://www.jeuxvideo.com/wikis-soluce-astuces/1716911/quetes-annexes.htm'
-        print(f"Scraping data from {url}")
-        quest_dicts = [quest.to_dict() for quest in get_quests(url)]
+        element_dictionaries = [elem.to_dict() for elem in all_elements]
+        elements_by_category = defaultdict(list)
+        for element_dic in element_dictionaries:
+            elements_by_category[element_dic['category']].append(element_dic)
 
-        # Group the quests by region.
-        quests_by_region = defaultdict(list)
-        for quest in quest_dicts:
-            quests_by_region[quest['category']].append(quest)
+        specific_element = ((one_elem := all_elements[0].__class__.__name__.lower())
+                            + ('ies' if one_elem.endswith('y') else 's'))
 
-        print(f"Found {len(quest_dicts)} elements")
-
-        # Save the quests for each region to a separate JSON file.
-        for region, quests in quests_by_region.items():
-            print(quests)
-            filename = f'{DATABASE}/{region}_quests.json'
-            if Path(filename).exists():
+        # Save the elements for category to a separate JSON file
+        for category, elements in elements_by_category.items():
+            filename = f'{DATABASE}/{category}_{specific_element}.json'
+            if Path(filename).exists() and Path(filename).stat().st_size > 0:
                 print(f"{filename} already exists, skipping it")
                 continue
 
-            # If write fails, delete the file.
             try:
                 with open(filename, 'w') as f:
-                    json.dump(quests, f, indent=2)
+                    json.dump(elements, f, indent=2)
             except:
-                os.remove(filename)
+                print(f"Error while saving {filename} to disk")
+                if os.path.exists(filename):
+                    os.remove(filename)
                 raise
 
 

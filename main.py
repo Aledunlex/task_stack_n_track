@@ -1,6 +1,7 @@
 import db_handler
-import gui
+from interface import gui
 from db_handler import populate_db
+from scraping.scraper import QuestScraper
 
 
 def create_quests_by_region():
@@ -15,7 +16,9 @@ def create_quests_by_region():
 
 
 def main():
-    populate_db()
+    quest_scraper = QuestScraper()
+
+    populate_db(quest_scraper.parse_elements_from())
     elems_by_category = create_quests_by_region()
     gui.App(elems_by_category)
 
