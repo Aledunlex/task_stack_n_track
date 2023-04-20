@@ -5,18 +5,8 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QToolBar
 
 from db_handler import update_quest_done
-
-# One color per game region
-from quest import Quest
-
-BACKGROUND_COLORS = ['#e6194b', '#3cb44b', '#ffe119', '#0082c8',
-                     '#f58231', '#911eb4', '#46f0f0', '#f032e6']
-
-
-def get_text_color(bg_color):
-    r, g, b = int(bg_color[1:3], 16), int(bg_color[3:5], 16), int(bg_color[5:7], 16)
-    luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-    return '#000000' if luminance > 0.5 else '#ffffff'
+from model.displayable import Category
+from model.element import Element
 
 
 def highlight_search_text(text, search_text):
@@ -27,14 +17,13 @@ def highlight_search_text(text, search_text):
 
 
 class App:
-    def __init__(self, quests_by_region):
+    def __init__(self, elems_by_categ: dict[Category, list[Element]]):
         super().__init__()
         self._counter = None
         self.dones_filter_checkbox = None
         self.window = None
-        self.ui_colors = {}
-        # Sorting the quest_by_region dict by their keys
-        self.quests_by_region = {k: quests_by_region[k] for k in sorted(quests_by_region.keys())}
+        # Sorting the elems_by_categ dict by the 'value' of their Category keys
+        self.elems_by_categ = {k: v for k, v in sorted(elems_by_categ.items(), key=lambda item: item[0].value)}
         self.init_ui()
 
     # self.counter will also update the counter label in the toolbar when its value is updated
@@ -47,7 +36,8 @@ class App:
         self._counter = value
         # Update the counter label in the toolbar
         counter_label = self.window.findChild(QtWidgets.QLabel)
-        element_str = Quest.__name__.lower() + ('s' if self.counter != 1 else '')
+        # Get the name of the specific implementation of Element in the elems_by_categ dict
+        element_str = next(iter(self.elems_by_categ.values()))[0].__class__.__name__.lower() + 's'
         counter_label.setText(f'Displaying {self.counter} {element_str}')
 
     def init_ui(self):
@@ -77,7 +67,7 @@ class App:
         central_widget = QtWidgets.QWidget()
         window.setCentralWidget(central_widget)
 
-        all_quests = [quest for quests in self.quests_by_region.values() for quest in quests]
+        all_quests = [quest for quests in self.elems_by_categ.values() for quest in quests]
         self.view_quests_from(all_quests, self.dones_filter_checkbox.isChecked())
 
         window.show()
@@ -100,13 +90,13 @@ class App:
         toolbar.addWidget(dones_filter_checkbox)
         # Connect search bar and tag combo box signals
         search_bar.textChanged.connect(
-            lambda text: self.search_quests(self.quests_by_region, text, tag_combo_box.currentText(),
+            lambda text: self.search_quests(self.elems_by_categ, text, tag_combo_box.currentText(),
                                             dones_filter_checkbox.isChecked()))
         tag_combo_box.currentTextChanged.connect(
-            lambda text: self.search_quests(self.quests_by_region, search_bar.text(), text,
+            lambda text: self.search_quests(self.elems_by_categ, search_bar.text(), text,
                                             dones_filter_checkbox.isChecked()))
         dones_filter_checkbox.stateChanged.connect(
-            lambda state: self.search_quests(self.quests_by_region, search_bar.text(), tag_combo_box.currentText(),
+            lambda state: self.search_quests(self.elems_by_categ, search_bar.text(), tag_combo_box.currentText(),
                                              state == QtCore.Qt.Checked))
 
     def create_region_toolbar(self):
@@ -120,11 +110,9 @@ class App:
         hbox.addStretch(1)
 
         # Add the buttons to the layout
-        for i, region in enumerate(self.quests_by_region.keys()):
-            self.ui_colors[region] = BACKGROUND_COLORS[i]
-            quests = self.quests_by_region[region]
-            button = QtWidgets.QPushButton(region.replace('_', ' ').upper())
-            btn_text_color = get_text_color(BACKGROUND_COLORS[i])
+        for i, category in enumerate(self.elems_by_categ.keys()):
+            quests = self.elems_by_categ[category]
+            button = QtWidgets.QPushButton(category.value.replace('_', ' ').upper())
             button_style = """
             QPushButton {
                 background-color: #COLOR;
@@ -133,8 +121,8 @@ class App:
                 border-radius: 5px;
                 font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
                 font-size: 16px;
-            }""".replace('#COLOR', BACKGROUND_COLORS[i]).replace('#TEXT', btn_text_color)
-            button.setStyleSheet(button_style.replace('#COLOR', BACKGROUND_COLORS[i]).replace('#TEXT', btn_text_color))
+            }""".replace('#COLOR', category.background_color).replace('#TEXT', category.get_text_color())
+            button.setStyleSheet(button_style)
             button.clicked.connect(
                 lambda checked, q=quests: self.view_quests_from(q, self.dones_filter_checkbox.isChecked()))
             hbox.addWidget(button)
@@ -166,11 +154,11 @@ class App:
             if filter_dones and quest.done:
                 continue
             self.counter += 1
-            region_color = self.ui_colors[quest.region]
+            region_color = quest.category.background_color
             quest_widget = QtWidgets.QGroupBox()
             quest_widget.setStyleSheet(
-                'background-color: #COLOR; color: #TEXT; border-radius: 5px;'
-                    .replace('#COLOR', region_color).replace('#TEXT', get_text_color(region_color))
+                'background-color: #COLOR; color: #TEXT; border-radius: 5px;'.replace('#COLOR', region_color).replace(
+                    '#TEXT', quest.category.get_text_color())
             )
             quest_layout = QtWidgets.QHBoxLayout()
             quest_widget.setLayout(quest_layout)
@@ -184,27 +172,27 @@ class App:
             text_layout = QtWidgets.QVBoxLayout()
             quest_layout.addLayout(text_layout)
 
-            title_label = QtWidgets.QLabel()
-            title_label.setStyleSheet('font-size: 20px; font-weight: bold;')
-            title_label.setAlignment(QtCore.Qt.AlignCenter)
-            title_label.setWordWrap(True)
-            title_label.setTextFormat(QtCore.Qt.RichText)
-            title_label.setText(highlight_search_text(quest.title, search_text))
-            text_layout.addWidget(title_label)
-
-            reward_label = QtWidgets.QLabel()
-            reward_label.setStyleSheet('font-style: italic;')
-            reward_label.setWordWrap(True)
-            reward_label.setTextFormat(QtCore.Qt.RichText)
-            reward_label.setText(highlight_search_text(quest.reward, search_text))
-            text_layout.addWidget(reward_label)
-
-            solution_label = QtWidgets.QLabel()
-            solution_label.setStyleSheet('font-size: 15px')
-            solution_label.setWordWrap(True)
-            solution_label.setTextFormat(QtCore.Qt.RichText)
-            solution_label.setText(highlight_search_text(quest.solution, search_text))
-            text_layout.addWidget(solution_label)
+            # Iterating over the attributes of the quest that inherit the Displayable class
+            for attribute in quest.get_displayable_attributes():
+                attribute = quest.__getattribute__(attribute)
+                attribute_label = QtWidgets.QLabel()
+                attribute_label.setWordWrap(attribute.word_wrap)
+                attribute_label.setTextFormat(QtCore.Qt.RichText if attribute.text_format == "RichText"
+                                              else QtCore.Qt.PlainText)
+                style_sheet_content = ''
+                if attribute.font_size:
+                    style_sheet_content += 'font-size: {}px;'.format(attribute.font_size)
+                if attribute.font_style:
+                    style_sheet_content += 'font-style: {};'.format(attribute.font_style)
+                if attribute.font:
+                    style_sheet_content += 'font-family: {};'.format(attribute.font)
+                if attribute.background_color:
+                    style_sheet_content += 'background-color: {};'.format(attribute.background_color)
+                if attribute.alignment:
+                    style_sheet_content += 'text-align: {};'.format(attribute.alignment)
+                attribute_label.setText(attribute.value)
+                attribute_label.setStyleSheet(style_sheet_content)
+                text_layout.addWidget(attribute_label)
 
             scroll_area_layout.addWidget(quest_widget)
 
@@ -232,5 +220,3 @@ class App:
                     matching_quests.append(quest)
 
         self.view_quests_from(matching_quests, filter_dones, search_text)
-
-
