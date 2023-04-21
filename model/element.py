@@ -4,7 +4,7 @@ from typing import List
 
 from interface.displayable import Displayable, Category
 
-DATABASE = "DATABASE"
+from db.db_handler import DATABASE
 
 
 class Element(ABC):

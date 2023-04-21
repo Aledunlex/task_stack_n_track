@@ -5,7 +5,7 @@ from pathlib import Path
 
 from PyQt5 import QtCore
 
-DATABASE = 'DATABASE'
+DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "DATABASE")
 
 
 def populate_db(all_elements):
