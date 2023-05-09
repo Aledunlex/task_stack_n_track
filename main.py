@@ -1,6 +1,6 @@
 from db import db_handler
 from db.db_handler import populate_db
-from interface import gui
+from interface import pyqt_gui
 from scraping.scraper import QuestScraper
 
 
@@ -25,11 +25,8 @@ def main():
         all_data = quest_scraper.get_element_instances_from(element_dics)
         populate_db(all_data)
         elems_by_category = create_elements_by_category(quest_scraper.element_class)
-    try:
-        gui.App(elems_by_category)
-    except Exception as e:
-        print(e)
-        raise
+    from interface.web_gui.web_app import web_main
+    web_main(elems_by_category)
 
 
 if __name__ == '__main__':

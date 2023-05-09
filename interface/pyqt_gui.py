@@ -165,7 +165,7 @@ class App:
             done_checkbox = QtWidgets.QCheckBox()
             done_checkbox.setFixedSize(32, 32)
             done_checkbox.setChecked(element.done)
-            done_checkbox.stateChanged.connect(lambda state, e=element: update_element_check(e, state))
+            done_checkbox.stateChanged.connect(lambda state, e=element: update_element_check(e, (state == Qt.Checked)))
             element_layout.addWidget(done_checkbox)
 
             text_layout = QtWidgets.QVBoxLayout()

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask App</title>
+    <style>
+        /* Add your CSS styles here */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            background-color: #f1f1f1;
+            padding: 10px;
+        }
+        .search-container {
+            display: flex;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <!-- Toolbar 1 - search functionality -->
+    <div class="toolbar">
+        <div class="search-container">
+            <input type="text" id="searchBar" placeholder="Search elements...">
+            <select id="tagComboBox">
+                <option value="title">Title</option>
+                <option value="reward">Reward</option>
+                <option value="solution">Solution</option>
+            </select>
+            <input type="checkbox" id="donesFilterCheckbox" checked>Filter completed
+        </div>
+    </div>
+
+    <!-- Toolbar 2 - counter -->
+    <div class="toolbar">
+        <div id="counterLabel">Displaying {{ all_elements|length }} elements</div>
+    </div>
+
+    <!-- Central widget -->
+    <div id="centralWidget">
+    {% for element in all_elements %}
+        <div class="element" style="background-color: {{ element.category.background_color }};
+                                    color: {{ element.category.get_text_color() }};
+                                    border-radius: 5px; padding: 10px; margin-bottom: 10px;">
+            <div class="element-header" style="display: flex; align-items: center;">
+                <input type="checkbox" class="done-checkbox" data-element-title="{{ element.title }}" data-element-category="{{ element.category.value }}" {% if element.done.value %}checked{% endif %}>
+
+
+                <span style="margin-left: 10px;">{{ element.title }}</span>
+            </div>
+            <div class="element-attributes">
+                {% for attribute in element.get_displayable_attributes() %}
+                    {% set attr = element.__getattribute__(attribute) %}
+                    <div class="attribute" style="font-size: {{ attr.font_size }}px;
+                                                  font-style: {{ attr.font_style }};
+                                                  font-family: {{ attr.font }};
+                                                  background-color: {{ attr.background_color }};
+                                                  text-align: {{ attr.alignment }};
+                                                  word-wrap: break-word;
+                                                  padding: 5px; margin: 5px 0;">
+                        {{ attr.value|safe }}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+    <script>
+    $(document).ready(function() {
+        $('.done-checkbox').on('change', function() {
+            const elementTitle = $(this).data('element-title');
+            const elementCategory = $(this).data('element-category');
+            const isChecked = $(this).is(':checked');
+            
+            
+            // Update the 'done' status of the Element object
+            $.ajax({
+                url: '/update_done',
+                method: 'POST',
+                data: {
+                    'element_title': elementTitle,
+                    'element_category': elementCategory,
+                    'is_done': isChecked
+                },
+                success: function(response) {
+                    if (response.success) {
+                        updateCounterLabel();
+                    }
+                }
+            });
+        });
+
+        // Update the counter label
+        function updateCounterLabel() {
+            let visibleElements = 0;
+            $('.done-checkbox').each(function() {
+                if (!$(this).is(':checked')) {
+                    visibleElements++;
+                }
+            });
+
+            $('#counterLabel').text(`Displaying ${visibleElements} elements`);
+        }
+
+    });
+</script>
+
+</body>
+</html>

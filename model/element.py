@@ -8,86 +8,92 @@ from db.db_handler import DATABASE
 
 
 class Element(ABC):
-    def __init__(self, category, title, done=None):
-        self.category = Category(category)
-        self.title = Displayable(title)
-        if done is None:
-            self.done = False
-        else:
-            self.done = done == 'True'
 
-    def to_dict(self):
-        return {attr: str(getattr(self, attr)) for attr in dir(self)
-                if not attr.startswith('__')
-                and not callable(getattr(self, attr))
-                and not (isinstance(getattr(self, attr), ABC) or attr == '_abc_impl')}
+  def __init__(self, category, title, done=None):
+    self.category = Category(category)
+    self.title = Displayable(title)
+    if done is None:
+      self.done = False
+    else:
+      self.done = done == 'True'
 
-    @classmethod
-    def get_element_instances_from(cls, all_data: List[dict]):
-        all_elements = []
-        for data in all_data:
-            element = cls(**data)
-            all_elements.append(element)
-        return all_elements
+  def to_dict(self):
+    return {
+      attr: str(getattr(self, attr))
+      for attr in dir(self)
+      if not attr.startswith('__') and not callable(getattr(self, attr))
+      and not (isinstance(getattr(self, attr), ABC) or attr == '_abc_impl')
+    }
 
-    def get_displayable_attributes(self):
-        """Returns a list of the attributes that are instances of Displayable,
+  @classmethod
+  def get_element_instances_from(cls, all_data: List[dict]):
+    all_elements = []
+    for data in all_data:
+      element = cls(**data)
+      all_elements.append(element)
+    return all_elements
+
+  def get_displayable_attributes(self):
+    """Returns a list of the attributes that are instances of Displayable,
         except those which are instances of Category."""
-        return [attr for attr in dir(self)
-                if isinstance(getattr(self, attr), Displayable) and not isinstance(getattr(self, attr), Category)]
+    return [
+      attr for attr in dir(self)
+      if isinstance(getattr(self, attr), Displayable)
+      and not isinstance(getattr(self, attr), Category)
+    ]
 
+  @abstractmethod
+  def _init_displayables(self, ):
+    pass
 
-    @abstractmethod
-    def _init_displayables(self, ):
-        pass
-
-    def __str__(self):
-        # Returns the string name of the specific class that inherits from Element, followed by a representation of
-        # the result of to_dict
-        return f'{self.__class__.__name__}({self.to_dict()})'
+  def __str__(self):
+    # Returns the string name of the specific class that inherits from Element, followed by a representation of
+    # the result of to_dict
+    return f'{self.__class__.__name__}({self.to_dict()})'
 
 
 class Quest(Element):
-    def __init__(self, category, title, reward, solution, done=False):
-        super().__init__(category, title, done)
-        self.reward = Displayable(reward)
-        self.solution = Displayable(solution)
-        self._init_displayables()
 
-    def _init_displayables(self):
-        """Init each displayable attribute in order of appearance in the GUI"""
-        self.__init_category()
-        self.__init_title()
-        self.__init_reward()
-        self.__init_solution()
+  def __init__(self, category, title, reward, solution, done=False):
+    super().__init__(category, title, done)
+    self.reward = Displayable(reward)
+    self.solution = Displayable(solution)
+    self._init_displayables()
 
-    def __init_category(self):
-        category = self.category
-        try:
-            for i, filename in enumerate(os.listdir(DATABASE)):
-                if category.value.lower() in filename.lower():
-                    color = Category.get_colors()[i % len(Category.get_colors())]
-                    self.category.set_background_color(color)
-                    break
-        except FileNotFoundError:
-            pass
+  def _init_displayables(self):
+    """Init each displayable attribute in order of appearance in the GUI"""
+    self.__init_category()
+    self.__init_title()
+    self.__init_reward()
+    self.__init_solution()
 
-    def __init_title(self):
-        title = self.title
-        title.set_font_size(20)
-        title.set_font_weight('bold')
-        title.set_alignment('center')
-        title.set_word_wrap(True)
-        title.set_text_format('rich')
+  def __init_category(self):
+    category = self.category
+    try:
+      for i, filename in enumerate(os.listdir(DATABASE)):
+        if category.value.lower() in filename.lower():
+          color = Category.get_colors()[i % len(Category.get_colors())]
+          self.category.set_background_color(color)
+          break
+    except FileNotFoundError:
+      pass
 
-    def __init_solution(self):
-        solution = self.solution
-        solution.set_font_size(15)
-        solution.set_word_wrap(True)
-        solution.set_text_format('rich')
+  def __init_title(self):
+    title = self.title
+    title.set_font_size(20)
+    title.set_font_weight('bold')
+    title.set_alignment('center')
+    title.set_word_wrap(True)
+    title.set_text_format('rich')
 
-    def __init_reward(self):
-        reward = self.reward
-        reward.set_font_weight('italic')
-        reward.set_word_wrap(True)
-        reward.set_text_format('rich')
+  def __init_solution(self):
+    solution = self.solution
+    solution.set_font_size(15)
+    solution.set_word_wrap(True)
+    solution.set_text_format('rich')
+
+  def __init_reward(self):
+    reward = self.reward
+    reward.set_font_weight('italic')
+    reward.set_word_wrap(True)
+    reward.set_text_format('rich')
