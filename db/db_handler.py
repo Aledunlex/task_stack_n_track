@@ -52,7 +52,7 @@ def create_elements_from_json(element_class):
 
 def update_element_check(element, state):
     print(f"Getting {element.title.value} which is {'done' if element.done else 'not done'}")
-    element.done = str(state).capitalize()
+    element.done = state
     print(f"Updated (?) : {element.title.value} is {'done' if element.done else 'not done'}")
     # Find the JSON file corresponding to the element
     for filename in os.listdir(DATABASE):
@@ -63,12 +63,13 @@ def update_element_check(element, state):
                 data = json.load(f)
             for element_data in data:
                 if element_data['title'] == element.title.value:
-                    element_data['done'] = element.done
+                    element_data['done'] = str(element.done).capitalize()
                     print(f"{element.title} is {'not ' if not element.done else ''}done.")
                     break
             with open(joined_filepath, 'w') as f:
-                json.dump(data, f); break
+                json.dump(data, f)
 
-    with open(joined_filepath, 'r') as f:
-        updated_data = json.load(f)
+            with open(joined_filepath, 'r') as f:
+                updated_data = json.load(f)
+                break
     print("Updated data in JSON file:", updated_data)
