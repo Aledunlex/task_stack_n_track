@@ -15,9 +15,23 @@
         .search-container {
             display: flex;
         }
+        /* Add CSS Grid styles for the grid layout */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-gap: 10px;
+            padding: 10px;
+        }
+        .list-container {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+        }
     </style>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
+
 <body>
     <!-- Toolbar 1 - search functionality -->
     <div class="toolbar">
@@ -28,84 +42,159 @@
                 <option value="reward">Reward</option>
                 <option value="solution">Solution</option>
             </select>
-            <input type="checkbox" id="donesFilterCheckbox" checked>Filter completed
+            <!-- Filter checkbox -->
+            <input type="checkbox" id="filter-completed" onchange="filterCompleted()">Filter completed
         </div>
     </div>
 
     <!-- Toolbar 2 - counter -->
     <div class="toolbar">
+        <button id="toggle-view-btn">Toggle Grid/List View</button>
         <div id="counterLabel">Displaying {{ all_elements|length }} elements</div>
     </div>
 
     <!-- Central widget -->
     <div id="centralWidget">
-    {% for element in all_elements %}
-        <div class="element" style="background-color: {{ element.category.background_color }};
-                                    color: {{ element.category.get_text_color() }};
-                                    border-radius: 5px; padding: 10px; margin-bottom: 10px;">
-            <div class="element-header" style="display: flex; align-items: center;">
-                <input type="checkbox" class="done-checkbox" data-element-title="{{ element.title }}" data-element-category="{{ element.category.value }}" {% if element.done.value %}checked{% endif %}>
-
-
-                <span style="margin-left: 10px;">{{ element.title }}</span>
-            </div>
-            <div class="element-attributes">
-                {% for attribute in element.get_displayable_attributes() %}
-                    {% set attr = element.__getattribute__(attribute) %}
-                    <div class="attribute" style="font-size: {{ attr.font_size }}px;
-                                                  font-style: {{ attr.font_style }};
-                                                  font-family: {{ attr.font }};
-                                                  background-color: {{ attr.background_color }};
-                                                  text-align: {{ attr.alignment }};
-                                                  word-wrap: break-word;
-                                                  padding: 5px; margin: 5px 0;">
-                        {{ attr.value|safe }}
+        <div class="grid-container">
+            {% for element in all_elements %}
+                <div id="element-{{ element.title }}-{{ element.category.value }}" class="element" style="background-color: {{ element.category.background_color }};
+                                            color: {{ element.category.get_text_color() }};
+                                            border-radius: 5px; padding: 10px; margin-bottom: 10px;">
+                    <div class="element-header" style="display: flex; align-items: center;">
+                        <input type="checkbox" class="done-checkbox" data-element-title="{{ element.title }}" data-element-category="{{ element.category.value }}" {% if element.done %}checked{% endif %}>
+                        <span style="margin-left: 10px;">{{ element.title }}</span>
                     </div>
-                {% endfor %}
-            </div>
+                    <div class="element-attributes">
+                        {% for attribute in element.get_displayable_attributes() %}
+                            {% set attr = element.__getattribute__(attribute) %}
+                            <div class="attribute" data-attribute-name="{{ attribute }}" style="font-size: {{ attr.font_size }}px;
+                            font-style: {{ attr.font_style }};
+                            font-family: {{ attr.font }};
+                            background-color: {{ attr.background_color }};
+                            text-align: {{ attr.alignment }};
+                            word-wrap: break-word;
+                            padding: 5px; margin: 5px 0;">
+                                {{ attr.value|safe }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
         </div>
-    {% endfor %}
-</div>
+    </div>
 
-    <script>
-    $(document).ready(function() {
-        $('.done-checkbox').on('change', function() {
-            const elementTitle = $(this).data('element-title');
-            const elementCategory = $(this).data('element-category');
-            const isChecked = $(this).is(':checked');
-            
-            
-            // Update the 'done' status of the Element object
-            $.ajax({
-                url: '/update_done',
-                method: 'POST',
-                data: {
-                    'element_title': elementTitle,
-                    'element_category': elementCategory,
-                    'is_done': isChecked
-                },
-                success: function(response) {
-                    if (response.success) {
-                        updateCounterLabel();
-                    }
+<script>
+$(document).ready(function() {
+    // Toggle between grid and list view
+    $('#toggle-view-btn').on('click', function() {
+        const centralWidget = $('#centralWidget .grid-container, #centralWidget .list-container');
+        centralWidget.toggleClass('grid-container list-container');
+    });
+
+    $('.done-checkbox').on('change', function() {
+        const elementTitle = $(this).data('element-title');
+        const elementCategory = $(this).data('element-category');
+        const isChecked = $(this).is(':checked');
+
+        // Update the 'done' status of the Element object
+        $.ajax({
+            url: '/update_done',
+            method: 'POST',
+            data: {
+                'element_title': elementTitle,
+                'element_category': elementCategory,
+                'is_done': isChecked
+            },
+            success: function(response) {
+                if (response.success) {
+                    updateCounterLabel();
                 }
-            });
+            }
         });
 
-        // Update the counter label
-        function updateCounterLabel() {
-            let visibleElements = 0;
-            $('.done-checkbox').each(function() {
-                if (!$(this).is(':checked')) {
-                    visibleElements++;
-                }
-            });
+        // Call filterCompleted() after the AJAX request
+        filterCompleted();
+    });
 
-            $('#counterLabel').text(`Displaying ${visibleElements} elements`);
+    // Update the counter label
+    function updateCounterLabel() {
+        let visibleElements = $('.element:visible').length;
+        $('#counterLabel').text(`Displaying ${visibleElements} elements`);
+    }
+
+    updateCounterLabel();
+
+    function searchAndUpdateElements() {
+        const searchTerm = $('#searchBar').val().toLowerCase();
+        const searchTag = $('#tagComboBox').val();
+        const minSearchLength = 2;
+
+        if (searchTerm.length < minSearchLength) {
+            $('.element').show();
+            $('.attribute').each(function () { $(this).html($(this).text()); });
+            updateCounterLabel();
+            return;
         }
 
-    });
+        $('.element').each(function () {
+            const element = $(this);
+            const attributeDiv = element.find('.attribute[data-attribute-name="' + searchTag + '"]');
+            const attributeValue = attributeDiv.text().toLowerCase();
+
+            if (attributeValue.includes(searchTerm)) {
+                element.show();
+                const regex = new RegExp('(' + searchTerm + ')', 'gi');
+                const highlightedText = attributeDiv.text().replace(regex, '<span style="background-color: yellow;">$1</span>');
+                attributeDiv.html(highlightedText);
+            } else {
+                element.hide();
+            }
+        });
+
+        updateCounterLabel();
+    }
+
+    function filterCompleted() {
+        let filterCheckbox = document.getElementById('filter-completed');
+        let doneCheckboxes = document.getElementsByClassName('done-checkbox');
+
+        for (let checkbox of doneCheckboxes) {
+            let elementId = 'element-' + checkbox.dataset.elementTitle + '-' + checkbox.dataset.elementCategory;
+            let elementDiv = document.getElementById(elementId);
+
+            if (filterCheckbox.checked) {
+                if (checkbox.checked) {
+                    elementDiv.style.display = 'none';
+                } else {
+                    elementDiv.style.display = 'block';
+                }
+            } else {
+                elementDiv.style.display = 'block';
+            }
+        }
+        updateCounterLabel();
+    }
+
+    $('#searchBar').on('input', searchAndUpdateElements);
+    // Call filterCompleted() when the filter checkbox is changed
+    $('#filter-completed').on('change', filterCompleted);
+});
+
+function highlight(text, searchTerm) {
+    const index = text.toLowerCase().indexOf(searchTerm.toLowerCase());
+    if (index === -1) {
+        return text;
+    }
+
+    return text.slice(0, index) + '<mark>' + text.slice(index, index + searchTerm.length) + '</mark>' + text.slice(index + searchTerm.length);
+}
+
 </script>
+
+
+
+
 
 </body>
 </html>
+               
