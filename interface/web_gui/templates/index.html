@@ -53,33 +53,47 @@
         <div id="counterLabel">Displaying {{ all_elements|length }} elements</div>
     </div>
 
+    <!-- Toolbar 3 - category filter -->
+    <div class="toolbar">
+        <div id="categoryFilterContainer">
+            {% for category in categories %}
+                <button class="category-filter-button" data-category="{{ category.value }}">{{ category.value }}</button>
+            {% endfor %}
+        </div>
+    </div>
+
     <!-- Central widget -->
     <div id="centralWidget">
         <div class="grid-container">
             {% for element in all_elements %}
-                <div id="element-{{ element.title }}-{{ element.category.value }}" class="element" style="background-color: {{ element.category.background_color }};
-                                            color: {{ element.category.get_text_color() }};
-                                            border-radius: 5px; padding: 10px; margin-bottom: 10px;">
-                    <div class="element-header" style="display: flex; align-items: center;">
-                        <input type="checkbox" class="done-checkbox" data-element-title="{{ element.title }}" data-element-category="{{ element.category.value }}" {% if element.done %}checked{% endif %}>
-                        <span style="margin-left: 10px;">{{ element.title }}</span>
-                    </div>
-                    <div class="element-attributes">
-                        {% for attribute in element.get_displayable_attributes() %}
-                            {% set attr = element.__getattribute__(attribute) %}
-                            <div class="attribute" data-attribute-name="{{ attribute }}" style="font-size: {{ attr.font_size }}px;
-                            font-style: {{ attr.font_style }};
-                            font-family: {{ attr.font }};
-                            background-color: {{ attr.background_color }};
-                            text-align: {{ attr.alignment }};
-                            word-wrap: break-word;
-                            padding: 5px; margin: 5px 0;">
-                                {{ attr.value|safe }}
-                            </div>
-                        {% endfor %}
-                    </div>
+    <div class="element" style="background-color: {{ element.category.background_color }};
+                                color: {{ element.category.get_text_color() }};
+                                border-radius: 5px; padding: 10px; margin-bottom: 10px;">
+        <div class="element-header" style="display: flex; align-items: center;">
+            <input type="checkbox" class="done-checkbox" data-element-title="{{ element.title }}" data-element-category="{{ element.category.value }}" {% if element.done %}checked{% endif %}>
+            <span style="margin-left: 10px;">{{ element.title }}</span>
+        </div>
+        <div class="element-attributes">
+            {% for attribute in element.get_displayable_attributes() %}
+                {% set attr = element.__getattribute__(attribute) %}
+                <div class="attribute" style="font-size: {{ attr.font_size }}px;
+                                              font-style: {{ attr.font_style }};
+                                              font-family: {{ attr.font }};
+                                              background-color: {{ attr.background_color }};
+                                              text-align: {{ attr.alignment }};
+                                              word-wrap: break-word;
+                                              padding: 5px; margin: 5px 0;">
+                    {% if loop.first %}
+                        <input type="text" class="attribute-input" placeholder="{{ attr.value }}" data-attribute-name="{{ attribute }}">
+                    {% else %}
+                        {{ attr.value|safe }}
+                    {% endif %}
                 </div>
             {% endfor %}
+        </div>
+    </div>
+{% endfor %}
+
         </div>
     </div>
 
@@ -175,6 +189,10 @@ $(document).ready(function() {
         updateCounterLabel();
     }
 
+    $('#tagComboBox').on('change', function() {
+      searchAndUpdateElements();
+    });  
+  
     $('#searchBar').on('input', searchAndUpdateElements);
     // Call filterCompleted() when the filter checkbox is changed
     $('#filter-completed').on('change', filterCompleted);
