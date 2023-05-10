@@ -65,7 +65,7 @@
     <!-- Central widget -->
     <div id="centralWidget">
         <div class="grid-container">
-            {% for element in all_elements %}
+{% for element in all_elements %}
     <div class="element" style="background-color: {{ element.category.background_color }};
                                 color: {{ element.category.get_text_color() }};
                                 border-radius: 5px; padding: 10px; margin-bottom: 10px;">
@@ -83,7 +83,7 @@
                                               text-align: {{ attr.alignment }};
                                               word-wrap: break-word;
                                               padding: 5px; margin: 5px 0;">
-                    {% if loop.first %}
+                    {% if is_blank_element %}
                         <input type="text" class="attribute-input" placeholder="{{ attr.value }}" data-attribute-name="{{ attribute }}">
                     {% else %}
                         {{ attr.value|safe }}
@@ -92,6 +92,9 @@
             {% endfor %}
         </div>
     </div>
+    {% if is_blank_element %}
+        {% set is_blank_element = False %}
+    {% endif %}
 {% endfor %}
 
         </div>
@@ -99,6 +102,9 @@
 
 <script>
 $(document).ready(function() {
+    $('.element').first().find('.attribute-input').attr('readonly', false);
+
+  
     // Toggle between grid and list view
     $('#toggle-view-btn').on('click', function() {
         const centralWidget = $('#centralWidget .grid-container, #centralWidget .list-container');
