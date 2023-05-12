@@ -3,6 +3,8 @@ import os
 import threading
 from flask import request
 
+from interface.displayable import Displayable
+
 from db import db_handler as db
 
 
@@ -38,6 +40,7 @@ def web_main(elems_by_categ: dict):
         attr_name: attr_value
         for attr_name, attr_value in attributes.items()
       }
+      print(element_attributes)
       new_element = element_class(**element_attributes)
 
       # Add the new element to the list
@@ -46,9 +49,30 @@ def web_main(elems_by_categ: dict):
         elems_by_categ[new_element.category] = [new_element]
       else:
         current_elems_in_cat.append(new_element)
-
+      db.insert_new_element(new_element)
       return jsonify({'success': True})
     except Exception as e:
+      return jsonify({'success': False, 'error': str(e)})
+
+  @app.route('/remove_element', methods=['POST'])
+  def remove_element():
+    element_title = request.form.get('element_title')
+    element_category = request.form.get('element_category')
+    print(f'Element title: {element_title}, Element category: {element_category}')
+
+    try:
+      for key in elems_by_categ:
+        if key.value == element_category:
+            # update the list of elements for this category
+            elems_by_categ[key] = [
+                elem for elem in elems_by_categ[key]
+                if elem.title.value != element_title
+            ]
+            break  # exit the loop once the correct category is found
+      db.remove_from_json(element_title, element_category)
+      return jsonify({'success': True})
+    except Exception as e:
+      raise e
       return jsonify({'success': False, 'error': str(e)})
 
   @app.route('/')

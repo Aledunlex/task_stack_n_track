@@ -66,3 +66,31 @@ def update_element_check(element, state):
           break
       with open(joined_filepath, 'w') as f:
         json.dump(data, f)
+
+
+def remove_from_json(element_title: str, element_category: str):
+  for filename in os.listdir(DATABASE):
+    if element_category in filename:
+      with open(os.path.join(DATABASE, filename), 'r+') as file:
+        data = json.load(file)
+        data = [item for item in data if item['title'] != element_title]
+        file.seek(0)
+        json.dump(data, file)
+        file.truncate()
+
+
+def insert_new_element(element):
+    filename = f"{element.category.value}.json"
+    file_path = os.path.join(DATABASE, filename)
+    
+    if not os.path.exists(file_path):
+        with open(file_path, 'w') as file:
+            json.dump([], file)
+
+    with open(file_path, 'r+') as file:
+        data = json.load(file)
+        new_item = element.to_dict()
+        data.append(new_item)
+        file.seek(0)
+        json.dump(data, file)
+        file.truncate()
