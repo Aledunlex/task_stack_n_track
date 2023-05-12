@@ -4,41 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flask App</title>
-    <style>
-        /* Add your CSS styles here */
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            background-color: #f1f1f1;
-            padding: 10px;
-        }
-        .search-container {
-            display: flex;
-        }
-        /* Add CSS Grid styles for the grid layout */
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            grid-gap: 10px;
-            padding: 10px;
-        }
-        .list-container {
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-        }
-        .category-input {
-            margin-left: 5px;
-            text-align: left;
-            margin-top: 5px; /
-        }
-        .title-input {
-            text-align: left !important;
-        }
-
-    </style>
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </head>
 
 <body>
@@ -92,9 +60,9 @@
       
         <div class="element-attributes">
     {% for attribute in element.get_displayable_attributes() %}
-        {% set attr = element.__getattribute__(attribute) %}
-        <div class="attribute {% if element.is_editable and attribute == 'title' %}title-input{% endif %}" 
-     style="font-size: {{ attr.font_size }}px;
+    {% set attr = element.__getattribute__(attribute) %}
+    <div class="attribute attribute-{{ attribute }} {% if element.is_editable and attribute == 'title' %}title-input{% endif %}"
+         style="font-size: {{ attr.font_size }}px;
             font-style: {{ attr.font_style }};
             font-family: {{ attr.font }};
             background-color: {{ attr.background_color }};
@@ -102,13 +70,14 @@
             word-wrap: break-word;
             padding: 5px; margin: 5px 0;">
 
-            {% if element.is_editable %}
-                <input type="text" class="attribute-input" placeholder="{{ attr.value }}" data-attribute-name="{{ attribute }}">
-            {% else %}
-                {{ attr.value }}
-            {% endif %}
-        </div>
-    {% endfor %}
+        {% if element.is_editable %}
+            <input type="text" class="attribute-input" placeholder="{{ attr.value }}" data-attribute-name="{{ attribute }}">
+        {% else %}
+            {{ attr.value }}
+        {% endif %}
+    </div>
+{% endfor %}
+
           {% if  element.is_editable %}
     <input type="text" class="attribute-input category-input" id="first-category-input" placeholder="Category" data-attribute-name="category">
 {% endif %}
@@ -119,211 +88,6 @@
     </div>
 </div>
 
-
-<script>
-$(document).ready(function() {
-    $('.element').first().find('.attribute-input').attr('readonly', false);
-
-// Category filter buttons event
-$('.category-filter-button').on('click', function() {
-    const selectedCategory = $(this).data('category');
-
-    // Show all elements
-    $('.element:not(:first)').show();
-
-    // If a specific category is selected, hide elements that do not belong to this category
-    if (selectedCategory) {
-        $('.element:not(:first)').each(function() {
-            const elementCategory = $(this).find('.done-checkbox').data('element-category');
-            if (elementCategory !== selectedCategory) {
-                $(this).hide();
-            }
-        });
-    }
-
-    // Update the counter label
-    updateCounterLabel();
-
-    // If a new element is being created, set the category field to the selected category and make it read-only
-    const categoryInput = $('#first-category-input');
-    if (selectedCategory) {
-        categoryInput.val(selectedCategory).prop('readonly', true).css("background-color", "grey");
-    } else {
-        categoryInput.val('').prop('readonly', false).css("background-color", "");
-    }
-});
-  
-    // Toggle between grid and list view
-    $('#toggle-view-btn').on('click', function() {
-        const centralWidget = $('#centralWidget .grid-container, #centralWidget .list-container');
-        centralWidget.toggleClass('grid-container list-container');
-    });
-
-    $('.done-checkbox').on('change', function() {
-        const elementTitle = $(this).data('element-title');
-        const elementCategory = $(this).data('element-category');
-        const isChecked = $(this).is(':checked');
-
-        // Update the 'done' status of the Element object
-        $.ajax({
-            url: '/update_done',
-            method: 'POST',
-            data: {
-                'element_title': elementTitle,
-                'element_category': elementCategory,
-                'is_done': isChecked
-            },
-            success: function(response) {
-                if (response.success) {
-                    updateCounterLabel();
-                }
-            }
-        });
-
-        // Call filterCompleted() after the AJAX request
-        filterCompleted();
-    });
-
-    // Update the counter label
-    function updateCounterLabel() {
-        let visibleElements = $('.element:visible').length-1;
-        $('#counterLabel').text(`Displaying ${visibleElements} elements`);
-    }
-
-    updateCounterLabel();
-
-    function searchAndUpdateElements() {
-        const searchTerm = $('#searchBar').val().toLowerCase();
-        const searchTag = $('#tagComboBox').val();
-        const minSearchLength = 2;
-
-        if (searchTerm.length < minSearchLength) {
-            $('.element').show();
-            $('.attribute').each(function () { $(this).html($(this).text()); });
-            updateCounterLabel();
-            return;
-        }
-
-        $('.element').each(function () {
-            const element = $(this);
-            const attributeDiv = element.find('.attribute[data-attribute-name="' + searchTag + '"]');
-            const attributeValue = attributeDiv.text().toLowerCase();
-
-            if (attributeValue.includes(searchTerm)) {
-                element.show();
-                const regex = new RegExp('(' + searchTerm + ')', 'gi');
-                const highlightedText = attributeDiv.text().replace(regex, '<span style="background-color: yellow;">$1</span>');
-                attributeDiv.html(highlightedText);
-            } else {
-                element.hide();
-            }
-        });
-
-        updateCounterLabel();
-    }
-
-    function filterCompleted() {
-        let filterCheckbox = document.getElementById('filter-completed');
-        let doneCheckboxes = document.getElementsByClassName('done-checkbox');
-
-        for (let checkbox of doneCheckboxes) {
-            let elementId = 'element-' + checkbox.dataset.elementTitle + '-' + checkbox.dataset.elementCategory;
-            let elementDiv = document.getElementById(elementId);
-
-            if (filterCheckbox.checked) {
-                if (checkbox.checked) {
-                    elementDiv.style.display = 'none';
-                } else {
-                    elementDiv.style.display = 'block';
-                }
-            } else {
-                elementDiv.style.display = 'block';
-            }
-        }
-        updateCounterLabel();
-    }
-
-    $('#tagComboBox').on('change', function() {
-      searchAndUpdateElements();
-    });  
-  
-    $('#searchBar').on('input', searchAndUpdateElements);
-    // Call filterCompleted() when the filter checkbox is changed
-    $('#filter-completed').on('change', filterCompleted);
-});
-
-function highlight(text, searchTerm) {
-    const index = text.toLowerCase().indexOf(searchTerm.toLowerCase());
-    if (index === -1) {
-        return text;
-    }
-
-    return text.slice(0, index) + '<mark>' + text.slice(index, index + searchTerm.length) + '</mark>' + text.slice(index + searchTerm.length);
-}
-
-        function createNewElement() {
-    // Gather the attribute values from the editable element
-    var attributes = {};
-    $('.element').first().find('input[type="text"]').each(function() {
-        var attributeName = $(this).data('attribute-name');
-        var attributeValue = $(this).val();
-        attributes[attributeName] = attributeValue;
-    });
-
-
-            // Send the attribute values to the server
-            $.ajax({
-                url: '/create_element',
-                method: 'POST',
-                data: attributes,
-                success: function(response) {
-                    if (response.success) {
-                        // If the server successfully created the new element, refresh the page to show it
-                        location.reload();
-                    } else {
-                        alert('Failed to create new element: ' + response.error);
-                    }
-                }
-            });
-        }
-
-        $('.attribute-input').keypress(function(event) {
-            if (event.keyCode == 13) {  // 13 is the key code for ENTER
-                event.preventDefault();
-                createNewElement();
-            }
-        });
-
-  // Remove button event
-$('.remove-button').on('click', function() {
-    const elementTitle = $(this).data('element-title');
-    const elementCategory = $(this).data('element-category');
-
-    // Confirm the removal
-    if (confirm(`Remove ${elementTitle}?`)) {
-        // Send a request to the server to remove the element
-        $.ajax({
-            url: '/remove_element',
-            method: 'POST',
-            data: {
-                'element_title': elementTitle,
-                'element_category': elementCategory
-            },
-            success: function(response) {
-                if (response.success) {
-                    // If the server successfully removed the element, refresh the page to reflect the changes
-                    location.reload();
-                } else {
-                    alert('Failed to remove element: ' + response.error);
-                }
-            }
-        });
-    }
-});
-
-
-    
-    </script>
 </body>
 </html>
                
