@@ -79,14 +79,14 @@
                         color: {{ element.category.get_text_color() }};
                         border-radius: 5px; padding: 10px; margin-bottom: 10px;">
         <div class="element-header" style="display: flex; justify-content: space-between; align-items: center;">
+          {% if element.title.value != "Title" %}
             <div>
                 <input type="checkbox" class="done-checkbox" data-element-title="{{ element.title }}" data-element-category="{{ element.category.value }}" {% if element.done %}checked{% endif %}>
                 <span style="margin-left: 10px;">Done</span>
             </div>
             <!-- Condition to exclude blank element -->
-            {% if element.title.value != "Title" %}
             <button class="remove-button" data-element-title="{{ element.title }}" data-element-category="{{ element.category.value }}">X</button>
-            {% endif %}
+          {% endif %}
         </div>
 
       

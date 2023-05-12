@@ -3,8 +3,6 @@ import os
 import threading
 from flask import request
 
-from interface.displayable import Displayable
-
 from db import db_handler as db
 
 
