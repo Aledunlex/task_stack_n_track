@@ -1,11 +1,9 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 import os
 import threading
 from flask import request
 
 from db import db_handler as db
-from model.element import Element, Quest
-from interface.displayable import Category
 
 
 def web_main(elems_by_categ: dict):
@@ -18,10 +16,9 @@ def web_main(elems_by_categ: dict):
 
   def create_blank_element(element_class, element_attributes):
     blank_element = element_class(**element_attributes, category="Category")
-    blank_element.category.background_color = "#ffffff"
+    blank_element.category.background_color = "#808080"
     return blank_element
 
-  
   def get_element_by_title_and_category(title, category_value):
     for elements in elems_by_categ.values():
       for element in elements:
@@ -30,23 +27,48 @@ def web_main(elems_by_categ: dict):
           return element
     return None
 
+  @app.route('/create_element', methods=['POST'])
+  def create_element():
+    try:
+      attributes = request.form
+      # Create a new Element object and set its attributes
+      first_elem = get_all_elements()[0]
+      element_class = type(first_elem)
+      element_attributes = {
+        attr_name: attr_value
+        for attr_name, attr_value in attributes.items()
+      }
+      new_element = element_class(**element_attributes)
+
+      # Add the new element to the list
+      current_elems_in_cat = elems_by_categ.get(new_element.category)
+      if current_elems_in_cat is None:
+        elems_by_categ[new_element.category] = [new_element]
+      else:
+        current_elems_in_cat.append(new_element)
+
+      return jsonify({'success': True})
+    except Exception as e:
+      return jsonify({'success': False, 'error': str(e)})
+
   @app.route('/')
   def index():
-      all_elements = get_all_elements()
-      categories = list(set([element.category for element in all_elements]))
-  
-      if all_elements:
-          element_class = type(all_elements[0])
-          element_attributes = {attr: attr.capitalize() for attr in all_elements[0].get_displayable_attributes()}
-      else:
-          element_class = Element
-          element_attributes = {}
-  
-      blank_element = create_blank_element(element_class, element_attributes)
-      all_elements.insert(0, blank_element)
-  
-      return render_template('index.html', all_elements=all_elements, categories=categories)
+    all_elements = get_all_elements()
+    categories = list(set([element.category for element in all_elements]))
 
+    element_class = type(all_elements[0])
+    element_attributes = {
+      attr: attr.capitalize()
+      for attr in all_elements[0].get_displayable_attributes()
+    }
+
+    blank_element = create_blank_element(element_class, element_attributes)
+    blank_element.is_editable = True
+    all_elements.insert(0, blank_element)
+
+    return render_template('index.html',
+                           all_elements=all_elements,
+                           categories=categories)
 
   @app.route('/update_done', methods=['POST'])
   def update_done():

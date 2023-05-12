@@ -27,6 +27,15 @@
             flex-direction: column;
             padding: 10px;
         }
+        .category-input {
+            margin-left: 5px;
+            text-align: left;
+            margin-top: 5px; /
+        }
+        .title-input {
+            text-align: left !important;
+        }
+
     </style>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -56,54 +65,85 @@
     <!-- Toolbar 3 - category filter -->
     <div class="toolbar">
         <div id="categoryFilterContainer">
+            <button class="category-filter-button" data-category="">All</button>
             {% for category in categories %}
                 <button class="category-filter-button" data-category="{{ category.value }}">{{ category.value }}</button>
             {% endfor %}
         </div>
     </div>
-
-    <!-- Central widget -->
-    <div id="centralWidget">
-        <div class="grid-container">
+<!-- Central widget -->
+<div id="centralWidget">
+    <div class="grid-container">
 {% for element in all_elements %}
-    <div class="element" style="background-color: {{ element.category.background_color }};
+    <div class="element" id="element-{{ loop.index }}" style="background-color: {{ element.category.background_color }};
                                 color: {{ element.category.get_text_color() }};
                                 border-radius: 5px; padding: 10px; margin-bottom: 10px;">
         <div class="element-header" style="display: flex; align-items: center;">
             <input type="checkbox" class="done-checkbox" data-element-title="{{ element.title }}" data-element-category="{{ element.category.value }}" {% if element.done %}checked{% endif %}>
-            <span style="margin-left: 10px;">{{ element.title }}</span>
+            <span style="margin-left: 10px;">Done</span>
         </div>
         <div class="element-attributes">
-            {% for attribute in element.get_displayable_attributes() %}
-                {% set attr = element.__getattribute__(attribute) %}
-                <div class="attribute" style="font-size: {{ attr.font_size }}px;
-                                              font-style: {{ attr.font_style }};
-                                              font-family: {{ attr.font }};
-                                              background-color: {{ attr.background_color }};
-                                              text-align: {{ attr.alignment }};
-                                              word-wrap: break-word;
-                                              padding: 5px; margin: 5px 0;">
-                    {% if is_blank_element %}
-                        <input type="text" class="attribute-input" placeholder="{{ attr.value }}" data-attribute-name="{{ attribute }}">
-                    {% else %}
-                        {{ attr.value|safe }}
-                    {% endif %}
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% if is_blank_element %}
-        {% set is_blank_element = False %}
-    {% endif %}
-{% endfor %}
+    {% for attribute in element.get_displayable_attributes() %}
+        {% set attr = element.__getattribute__(attribute) %}
+        <div class="attribute {% if element.is_editable and attribute == 'title' %}title-input{% endif %}" 
+     style="font-size: {{ attr.font_size }}px;
+            font-style: {{ attr.font_style }};
+            font-family: {{ attr.font }};
+            background-color: {{ attr.background_color }};
+            text-align: {{ attr.alignment }};
+            word-wrap: break-word;
+            padding: 5px; margin: 5px 0;">
 
+            {% if element.is_editable %}
+                <input type="text" class="attribute-input" placeholder="{{ attr.value }}" data-attribute-name="{{ attribute }}">
+            {% else %}
+                {{ attr.value }}
+            {% endif %}
         </div>
+    {% endfor %}
+          {% if  element.is_editable %}
+    <input type="text" class="attribute-input category-input" id="first-category-input" placeholder="Category">
+{% endif %}
+
+</div>
     </div>
+{% endfor %}
+    </div>
+</div>
+
 
 <script>
 $(document).ready(function() {
     $('.element').first().find('.attribute-input').attr('readonly', false);
 
+// Category filter buttons event
+$('.category-filter-button').on('click', function() {
+    const selectedCategory = $(this).data('category');
+
+    // Show all elements
+    $('.element:not(:first)').show();
+
+    // If a specific category is selected, hide elements that do not belong to this category
+    if (selectedCategory) {
+        $('.element:not(:first)').each(function() {
+            const elementCategory = $(this).find('.done-checkbox').data('element-category');
+            if (elementCategory !== selectedCategory) {
+                $(this).hide();
+            }
+        });
+    }
+
+    // Update the counter label
+    updateCounterLabel();
+
+    // If a new element is being created, set the category field to the selected category and make it read-only
+    const categoryInput = $('#first-category-input');
+    if (selectedCategory) {
+        categoryInput.val(selectedCategory).prop('readonly', true).css("background-color", "grey");
+    } else {
+        categoryInput.val('').prop('readonly', false).css("background-color", "");
+    }
+});
   
     // Toggle between grid and list view
     $('#toggle-view-btn').on('click', function() {
@@ -138,7 +178,7 @@ $(document).ready(function() {
 
     // Update the counter label
     function updateCounterLabel() {
-        let visibleElements = $('.element:visible').length;
+        let visibleElements = $('.element:visible').length-1;
         $('#counterLabel').text(`Displaying ${visibleElements} elements`);
     }
 
@@ -213,12 +253,51 @@ function highlight(text, searchTerm) {
     return text.slice(0, index) + '<mark>' + text.slice(index, index + searchTerm.length) + '</mark>' + text.slice(index + searchTerm.length);
 }
 
-</script>
+        function createNewElement() {
+            // Gather the attribute values from the editable element
+            var attributes = {};
+            $('.element').first().find('.attribute-input').each(function() {
+                var attributeName = $(this).data('attribute-name');
+                var attributeValue = $(this).val();
+                attributes[attributeName] = attributeValue;
+            });
 
+            // Get the category value
+            var category = $('.element').first().find('.category-input').val();
+            attributes['category'] = category;
 
+            // Send the attribute values to the server
+            $.ajax({
+                url: '/create_element',
+                method: 'POST',
+                data: attributes,
+                success: function(response) {
+                    if (response.success) {
+                        // If the server successfully created the new element, refresh the page to show it
+                        location.reload();
+                    } else {
+                        alert('Failed to create new element: ' + response.error);
+                    }
+                }
+            });
+        }
 
+        $('.attribute-input').keypress(function(event) {
+            if (event.keyCode == 13) {  // 13 is the key code for ENTER
+                event.preventDefault();
+                createNewElement();
+            }
+        });
 
+        $('.category-input').keypress(function(event) {
+            if (event.keyCode == 13) {  // 13 is the key code for ENTER
+                event.preventDefault();
+                createNewElement();
+            }
+        });
 
+    
+    </script>
 </body>
 </html>
                

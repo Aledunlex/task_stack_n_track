@@ -8,7 +8,10 @@ class Displayable:
     def __init__(self, value, background_color=None, font=None, font_size=None, font_style=None, alignment=None,
                  wordwrap=None, textformat=None):
         self.value = value
-        self.background_color = background_color
+        if background_color is None:
+            self.background_color = "#fffffff"
+        else:
+            self.background_color = background_color
         self.font = font
         self.font_size = font_size
         self.font_style = font_style
