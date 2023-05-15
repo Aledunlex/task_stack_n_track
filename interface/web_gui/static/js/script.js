@@ -1,3 +1,4 @@
+(function() {
 $(document).ready(function() {
     $('.element').first().find('.attribute-input').attr('readonly', false);
 
@@ -24,7 +25,7 @@ $(document).ready(function() {
     });
 });
 
-let selectedCategory = null;
+let selectedCategory = window.selectedCategory || null;
 function handleCategoryFilterClick() {
     selectedCategory = $(this).data('category');
 
@@ -162,14 +163,17 @@ function createNewElement() {
         data: attributes,
         success: function(response) {
             if (response.success) {
-                // If the server successfully created the new element, refresh the page to show it
-                location.reload();
+                // If the server successfully created the new element, create a new DOM element and append it to the list
+                // Assuming 'response.element' contains the new element data
+                let newElement = createDomElementFromData(response.element);
+                $('.element-list').append(newElement);
             } else {
                 alert('Failed to create new element: ' + response.error);
             }
         }
     });
 }
+
 
 function handleRemoveClick() {
     const elementTitle = $(this).data('element-title');
@@ -187,8 +191,8 @@ function handleRemoveClick() {
             },
             success: function(response) {
                 if (response.success) {
-                    // If the server successfully removed the element, refresh the page to reflect the changes
-                    location.reload();
+                    // If the server successfully removed the element, remove it from the DOM
+                    $(this).parents('.element').remove();
                 } else {
                     alert('Failed to remove element: ' + response.error);
                 }
@@ -197,7 +201,9 @@ function handleRemoveClick() {
     }
 }
 
+
 function updateCounterLabel() {
     let visibleElements = $('.element:visible').length - 1;
     $('#counterLabel').text(`Displaying ${visibleElements} elements`);
 }
+})();

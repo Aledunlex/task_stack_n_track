@@ -1,7 +1,8 @@
 from db import db_handler
-from db.db_handler import populate_db
+
 #     from interface import pyqt_gui
-from scraping.scraper import QuestScraper
+from model.element import Quest
+from interface.web_gui import web_app
 
 
 def create_elements_by_category(element_class):
@@ -16,19 +17,8 @@ def create_elements_by_category(element_class):
 
 
 def main():
-  quest_scraper = QuestScraper()
-  try:
-    elems_by_category = create_elements_by_category(
-      quest_scraper.element_class)
-  except FileNotFoundError as e:
-    print(f"Error: {e}. Creating new database...")
-    element_dics = quest_scraper.scrape()
-    all_data = quest_scraper.get_element_instances_from(element_dics)
-    populate_db(all_data)
-    elems_by_category = create_elements_by_category(
-      quest_scraper.element_class)
-  from interface.web_gui.web_app import web_main
-  web_main(elems_by_category)
+  from interface.web_gui.web_app import main as web_main
+  web_main()
 
 
 if __name__ == '__main__':

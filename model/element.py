@@ -4,7 +4,7 @@ from typing import List
 
 from interface.displayable import Displayable, Category
 
-from db.db_handler import DATABASE
+from db.db_handler import DATABASE, get_supercategories
 
 
 class Element(ABC):
@@ -52,6 +52,74 @@ class Element(ABC):
     return f'{self.__class__.__name__}({self.to_dict()})'
 
 
+class Stackable(Element):
+    def __init__(self, category, title, done=None, stackable_properties=None):
+        super().__init__(category, title, done)
+        if stackable_properties is None:
+            self.stackable_properties = {}
+        else:
+            self.stackable_properties = stackable_properties
+        self.constituent_stackables = []
+
+    @property
+    def stackable_properties(self):
+        # Dynamically calculate stackable_properties based on constituent Stackables
+        stackable_properties = self._stackable_properties.copy()  # Start with the base properties
+        for stackable in self.constituent_stackables:
+            if not stackable.done:
+                for prop, value in stackable.stackable_properties.items():
+                    if prop in stackable_properties:
+                        stackable_properties[prop] += value
+                    else:
+                        stackable_properties[prop] = value
+        return stackable_properties
+
+    @stackable_properties.setter
+    def stackable_properties(self, value):
+        self._stackable_properties = value
+
+    def stack_with(self, other):
+        # Make sure the other object is a Stackable
+        if not isinstance(other, Stackable):
+            raise ValueError("Can only stack with another Stackable")
+        # Create a new Stackable that represents the combination
+        new_stackable = Stackable(self.category, self.title, self.done, self._stackable_properties.copy())
+        new_stackable.constituent_stackables = self.constituent_stackables + [other]
+        return new_stackable
+
+    def unstack(self, other):
+        # Similar to stack_with, but subtracts the properties of the other stackable
+        if not isinstance(other, Stackable):
+            raise ValueError("Can only unstack with another Stackable")
+
+        new_stackable = Stackable(self.category, self.title, self.done, self.stackable_properties.copy())
+        new_stackable.stack = self
+
+        for prop, value in other.stackable_properties.items():
+            if prop in new_stackable.stackable_properties:
+                new_stackable.stackable_properties[prop] -= value
+                if new_stackable.stackable_properties[prop] <= 0:
+                    # If the property value becomes 0 or negative, remove it from the stackable
+                    del new_stackable.stackable_properties[prop]
+            else:
+                # If the property doesn't exist in the current stackable, ignore it
+                pass
+
+        return new_stackable
+  
+  
+    def _init_displayables(self):
+      """Init each displayable attribute in order of appearance in the GUI"""
+      self.__init_title()
+  
+    def __init_title(self):
+      title = self.title
+      title.set_font_size(20)
+      title.set_font_weight('bold')
+      title.set_alignment('center')
+      title.set_word_wrap(True)
+      title.set_text_format('rich')
+
 class Quest(Element):
 
   def __init__(self, category, title, reward, solution, done=False):
@@ -70,11 +138,13 @@ class Quest(Element):
   def __init_category(self):
     category = self.category
     try:
-      for i, filename in enumerate(os.listdir(DATABASE)):
-        if category.value.lower() in filename.lower():
-          color = Category.get_colors()[i % len(Category.get_colors())]
-          self.category.set_background_color(color)
-          break
+      for supercategory in get_supercategories():
+        path = os.path.join(DATABASE, supercategory.value)
+        for i, filename in enumerate(os.listdir(path)):
+          if category.value.lower() in filename.lower():
+            color = Category.get_colors()[i % len(Category.get_colors())]
+            self.category.set_background_color(color)
+            break
     except FileNotFoundError:
       pass
 

@@ -73,9 +73,6 @@ class Category(Displayable):
                 '#aa6e28', '#fffac8', '#800000', '#aaffc3']
 
     def __eq__(self, other):
-        if not isinstance(other, Displayable):
-            print(f'Comparing Displayable with non-Displayable: {other}')
-            return False
         return self.value == other.value
 
     def __hash__(self):
