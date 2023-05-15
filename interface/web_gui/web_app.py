@@ -2,11 +2,9 @@ from flask import Flask, render_template, jsonify
 import os
 from flask import request
 
-import json
-
 from db import db_handler as db
 from interface.displayable import Category
-from model.element import Quest
+from model.element import Quest, Stackable
 
 class MyFlaskApp(Flask):
     def __init__(self, import_name, **options):
@@ -51,27 +49,40 @@ class MyFlaskApp(Flask):
     
     def create_element(self):
       try:
-        attributes = request.form
+        form_data = request.form
+        supercategory = form_data.get('supercategory')
+        attributes = {k: v for k, v in form_data.items() if k != 'supercategory'}
+        
+        print(attributes)
+        # Determine the class of the new element based on a query parameter
+        element_type = 'Quest'#request.args.get('element_type')
+        if element_type == 'Quest':
+            element_class = Quest
+        elif element_type == 'Stackable':
+            element_class = Stackable
+        else:
+            # Default to creating a Quest if no valid element type is specified
+            element_class = Quest
+
         # Create a new Element object and set its attributes
-        first_elem = self.get_all_elements()[0]
-        element_class = type(first_elem)
         element_attributes = {
-          attr_name: attr_value
-          for attr_name, attr_value in attributes.items()
+            attr_name: attr_value
+            for attr_name, attr_value in attributes.items()
         }
-        print(element_attributes)
         new_element = element_class(**element_attributes)
-    
+
         # Add the new element to the list
         current_elems_in_cat = self.elems_by_categ.get(new_element.category)
         if current_elems_in_cat is None:
-          self.elems_by_categ[new_element.category] = [new_element]
+            self.elems_by_categ[new_element.category] = [new_element]
         else:
-          current_elems_in_cat.append(new_element)
-        db.insert_new_element(new_element)
+            current_elems_in_cat.append(new_element)
+        db.insert_new_element(new_element, supercategory)
         return jsonify({'success': True})
       except Exception as e:
+        raise
         return jsonify({'success': False, 'error': str(e)})
+
     
     def remove_element(self):
       element_title = request.form.get('element_title')

@@ -94,9 +94,8 @@ def remove_from_json(element_title: str, element_category: str):
                         file.truncate()
 
 
-def insert_new_element(element):
-    supercat_folder = element.category.supercategory  # You'll need to implement this
-    supercat_path = os.path.join(DATABASE, supercat_folder)
+def insert_new_element(element, supercategory_name):
+    supercat_path = os.path.join(DATABASE, supercategory_name)
     os.makedirs(supercat_path, exist_ok=True)  # Create the supercategory directory if it doesn't exist
 
     filename = f"{element.category.value}.json"

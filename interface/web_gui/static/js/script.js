@@ -148,6 +148,8 @@ function removeHighlight() {
 }
 
 function createNewElement() {
+    let supercategory = $('#supercategory-title').text();
+  
     // Gather the attribute values from the editable element
     let attributes = {};
     $('.element').first().find('input[type="text"]').each(function() {
@@ -155,6 +157,9 @@ function createNewElement() {
         let attributeValue = $(this).val();
         attributes[attributeName] = attributeValue;
     });
+
+    // Add the supercategory to the attributes object
+    attributes['supercategory'] = supercategory;
 
     // Send the attribute values to the server
     $.ajax({
@@ -173,6 +178,7 @@ function createNewElement() {
         }
     });
 }
+
 
 
 function handleRemoveClick() {
