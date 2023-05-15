@@ -168,10 +168,9 @@ function createNewElement() {
         data: attributes,
         success: function(response) {
             if (response.success) {
-                // If the server successfully created the new element, create a new DOM element and append it to the list
-                // Assuming 'response.element' contains the new element data
-                let newElement = createDomElementFromData(response.element);
-                $('.element-list').append(newElement);
+                console.log("Success : " + response.element)
+                addNewElementToPage(response.element);
+                updateCounterLabel();
             } else {
                 alert('Failed to create new element: ' + response.error);
             }
@@ -197,8 +196,7 @@ function handleRemoveClick() {
             },
             success: function(response) {
                 if (response.success) {
-                    // If the server successfully removed the element, remove it from the DOM
-                    $(this).parents('.element').remove();
+				location.reload();
                 } else {
                     alert('Failed to remove element: ' + response.error);
                 }
@@ -212,4 +210,43 @@ function updateCounterLabel() {
     let visibleElements = $('.element:visible').length - 1;
     $('#counterLabel').text(`Displaying ${visibleElements} elements`);
 }
+
+function addNewElementToPage(new_element_data) {
+    // Create a new element div
+    const newElementDiv = $('<div>', { class: 'element' });
+
+    // Create and add the element header
+    const newElementHeader = $('<div>', { class: 'element-header', style: "display: flex; justify-content: space-between; align-items: center;" });
+
+    const newCheckboxDiv = $('<div>');
+    const newCheckbox = $('<input>', {
+        type: 'checkbox',
+        class: 'done-checkbox',
+        'data-element-title': new_element_data.title,
+        'data-element-category': new_element_data.category,
+        checked: new_element_data.done
+    });
+    newCheckboxDiv.append(newCheckbox);
+    newCheckboxDiv.append("<span style='margin-left: 10px;'>Done</span>");
+    newElementHeader.append(newCheckboxDiv);
+    newElementHeader.append('<button class="remove-button" data-element-title="'+ new_element_data.title+'" data-element-category="'+ new_element_data.category +'">X</button>');
+    newElementDiv.append(newElementHeader);
+
+    // Create and add the element attributes
+    const newElementAttributes = $('<div>', { class: 'element-attributes' });
+    for (let attributeName in new_element_data) {
+        if (attributeName !== 'title' && attributeName !== 'category' && attributeName !== 'done') {
+            const newAttributeDiv = $('<div>', { class: 'attribute attribute-' + attributeName });
+            newAttributeDiv.text(new_element_data[attributeName]);
+            newElementAttributes.append(newAttributeDiv);
+        }
+    }
+    newElementDiv.append(newElementAttributes);
+
+    // Append the new element div to the elements container
+    $('.grid-container').prepend(newElementDiv);
+}
+
+
+
 })();

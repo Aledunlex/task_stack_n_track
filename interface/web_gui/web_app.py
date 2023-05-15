@@ -9,6 +9,7 @@ from model.element import Quest, Stackable
 class MyFlaskApp(Flask):
     def __init__(self, import_name, **options):
         super().__init__(import_name, **options)
+        print("Initializing Flask app...")
         self.elems_by_categ = {}
 
         self.route('/create_element', methods=['POST'])(self.create_element)
@@ -78,9 +79,10 @@ class MyFlaskApp(Flask):
         else:
             current_elems_in_cat.append(new_element)
         db.insert_new_element(new_element, supercategory)
-        return jsonify({'success': True})
+        response = {'success': True, 'element': new_element.to_dict()}
+        print(f"Response: {response}")
+        return jsonify(response)
       except Exception as e:
-        raise
         return jsonify({'success': False, 'error': str(e)})
 
     
