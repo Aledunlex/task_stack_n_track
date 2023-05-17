@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Flask App</title>
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</head>
+
+<body>
+<!-- Add a link to go back to the supercategories page -->
+<a href="{{ url_for('supercategories') }}">Back to supercategories</a>
+
+<!-- Add a title indicating the current supercategory -->
+<h1 id="supercategory-title">{{ supercategory }}</h1>
+<!-- Toolbar 1 - search functionality -->
+<div class="toolbar">
+    <div class="search-container">
+        <input id="searchBar" placeholder="Search elements..." type="text">
+        <select id="tagComboBox">
+            <option value="title">Title</option>
+            <option value="reward">Reward</option>
+            <option value="solution">Solution</option>
+        </select>
+        <!-- Filter checkbox -->
+        <input id="filter-completed" onchange="filterCompleted()" type="checkbox">Filter completed
+    </div>
+</div>
+
+<!-- Toolbar 2 - counter -->
+<div class="toolbar">
+    <button id="toggle-view-btn">Toggle Grid/List View</button>
+    <div id="counterLabel">Displaying {{ all_elements|length }} elements</div>
+</div>
+
+<!-- Toolbar 3 - category filter -->
+<div class="toolbar">
+    <div id="categoryFilterContainer">
+        <button class="category-filter-button" data-category="">All</button>
+        {% for category in categories %}
+        <button class="category-filter-button" data-category="{{ category.value }}">{{ category.value }}</button>
+        {% endfor %}
+    </div>
+</div>
+<!-- Central widget -->
+<div id="centralWidget">
+    <div class="grid-container">
+        {% for element in all_elements %}
+        <div class="element" id="element-{{ loop.index }}" style="background-color: {{ element.category.background_color }};
+                        color: {{ element.category.get_text_color() }};
+                        border-radius: 5px; padding: 10px; margin-bottom: 10px;">
+            <div class="element-header" style="display: flex; justify-content: space-between; align-items: center;">
+                {% if element.title.value != "Title" %}
+                <div>
+                    <input %} %}checked{% class="done-checkbox"
+                           data-element-category="{{ element.category.value }}" data-element-title="{{ element.title }}" element.done endif if type="checkbox" {%>
+                    <span style="margin-left: 10px;">Done</span>
+                </div>
+                <!-- Condition to exclude blank element -->
+                <button class="remove-button" data-element-category="{{ element.category.value }}"
+                        data-element-title="{{ element.title }}">X
+                </button>
+                {% endif %}
+            </div>
+
+
+            <div class="element-attributes">
+                {% for attribute in element.get_displayable_attributes() %}
+                {% set attr = element.__getattribute__(attribute) %}
+                <div class="attribute attribute-{{ attribute }} {% if element.is_editable and attribute == 'title' %}title-input{% endif %}"
+                     style="font-size: {{ attr.font_size }}px;
+            font-style: {{ attr.font_style }};
+            font-family: {{ attr.font }};
+            background-color: {{ attr.background_color }};
+            text-align: {{ attr.alignment }};
+            word-wrap: break-word;
+            padding: 5px; margin: 5px 0;">
+
+                    {% if element.is_editable %}
+                    <input class="attribute-input" data-attribute-name="{{ attribute }}" placeholder="{{ attr.value }}"
+                           type="text">
+                    {% else %}
+                    {{ attr.value }}
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                {% if element.is_editable %}
+                <input class="attribute-input category-input" data-attribute-name="category" id="first-category-input"
+                       placeholder="Category" type="text">
+                {% endif %}
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+</body>
+</html>
+               

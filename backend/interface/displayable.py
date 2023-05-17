@@ -72,6 +72,9 @@ class Category(Displayable):
                 '#d2f53c', '#fabebe', '#008080', '#e6beff',
                 '#aa6e28', '#fffac8', '#800000', '#aaffc3']
 
+    def to_dict(self):
+        return {'value': self.value, 'background_color': self.background_color, 'text_color': self.get_text_color()}
+
     def __eq__(self, other):
         return self.value == other.value
 

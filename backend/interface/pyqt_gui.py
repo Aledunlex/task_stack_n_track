@@ -2,7 +2,6 @@ import re
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QSize, Qt
-
 from db.db_handler import update_element_check
 
 

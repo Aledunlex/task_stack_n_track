@@ -3,7 +3,6 @@ from typing import List
 
 import requests
 from bs4 import BeautifulSoup
-
 from model.element import Element, Quest
 
 
