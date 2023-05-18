@@ -1,9 +1,12 @@
-import './SupercategoryPage.css';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import componentMapping from './componentMapping';
+import { toast } from 'react-toastify';
 import axios from 'axios';
-import { updateElement } from './services/elementService';
+
+import './SupercategoryPage.css';
+import NewElementForm from './NewElementForm';
+import componentMapping from './componentMapping';
+import { updateElement, removeElement } from './services/elementService';
 
 const SupercategoryPage = () => {
   const [allElements, setAllElements] = useState([]);
@@ -40,9 +43,7 @@ const SupercategoryPage = () => {
   const viewStyleClass = viewStyle === 'list' ? 'list-view' : 'grid-view';
 
   const handleCheck = async (title, category, done) => {
-    console.log(done);
     const newDoneStatus = await updateElement(title, category, done);
-    console.log(newDoneStatus);
 
     // Met à jour l'état local des éléments
     setAllElements((prevElements) =>
@@ -52,18 +53,39 @@ const SupercategoryPage = () => {
     );
   };
 
+  const addNewElement = (newElement) => {
+    setAllElements(prevElements => [newElement, ...prevElements]);
+  };
+
+  const handleRemove = async (title, category) => {
+    const success = await removeElement(title, category);
+  
+    if (success) {
+      toast.success(`Element "${title}" removed`);
+      setAllElements((prevElements) =>
+        prevElements.filter((element) =>
+          !(element.title === title && element.category === category)
+        )
+      );
+    } else {
+      toast.error(`Error removing element "${title}"`);
+    }
+  };
+
   return (
     <div>
       <h1>{supercategory}</h1>
       <button onClick={toggleViewStyle}>Switch to {viewStyle === 'list' ? 'Grid' : 'List'} View</button>
       <div className={viewStyleClass}>
+        <NewElementForm supercategory={supercategory} addNewElement={addNewElement} />
         {allElements.map((item) => {
           const Component = componentMapping[getComponentName(item)];
-          return <Component key={item.title} handleCheck={handleCheck} {...item} />;
+          return <Component key={item.title} handleCheck={handleCheck} handleRemove={() => handleRemove(item.title, item.category)} {...item} />;
         })}
       </div>
     </div>
   );
+  
 };
 
 export default SupercategoryPage;

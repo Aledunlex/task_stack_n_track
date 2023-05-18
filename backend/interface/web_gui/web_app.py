@@ -15,8 +15,8 @@ class MyFlaskApp(Flask):
         self.categories_by_supercategories = {}
         self.elements_by_category = {}
 
-        self.route('/createElement', methods=['POST'])(self.create_element)
-        self.route('/removeElement', methods=['DELETE'])(self.remove_element)
+        self.route('/api/addElement', methods=['POST'])(self.create_element)
+        self.route('/api/removeElement', methods=['DELETE'])(self.remove_element)
         self.route('/api/supercategories')(self.supercategories)
         self.route('/api/<supercategory>')(self.index)
         self.route('/api/updateElement', methods=['PUT'])(self.update_done)
@@ -63,15 +63,16 @@ class MyFlaskApp(Flask):
 
     def create_element(self):
         try:
-            form_data = request.form
+            form_data = request.get_json()
+            print(form_data)
             supercategory = form_data.get('supercategory')
             attributes = {k: v for k, v in form_data.items() if k != 'supercategory'}
 
             # Determine the class of the new element based on a query parameter
-            element_type = 'Quest'  # request.args.get('element_type')
-            if element_type == 'Quest':
+            element_type = form_data.get('type')
+            if element_type == 'quest':
                 element_class = Quest
-            elif element_type == 'Stackable':
+            elif element_type == 'stackable':
                 element_class = Stackable
             else:
                 # Default to creating a Quest if no valid element type is specified
@@ -80,14 +81,15 @@ class MyFlaskApp(Flask):
             # Create a new Element object and set its attributes
             element_attributes = {
                 attr_name: attr_value
-                for attr_name, attr_value in attributes.items() if attr_name != "done"
+                for attr_name, attr_value in attributes.items()
+                if (attr_name != "done" and attr_name != "type")
             }
             new_element = element_class(**element_attributes)
 
             # Add the new element to the list
             current_elems_in_cat = self.elements_by_category.get(
                 new_element.category)
-            if current_elems_in_cat is None:
+            if current_elems_in_cat is None or len(current_elems_in_cat) == 0:
                 self.elements_by_category[new_element.category] = [new_element]
             else:
                 new_element.category = current_elems_in_cat[0].category
@@ -102,20 +104,23 @@ class MyFlaskApp(Flask):
             return jsonify({'success': False, 'error': str(e)})
 
     def remove_element(self):
-        element_title = request.form.get('element_title')
-        element_category = request.form.get('element_category')
-        print(
-            f'Element title: {element_title}, Element category: {element_category}')
+        requested_json = request.get_json()
+        element_title = requested_json.get('title')
+        element_category = requested_json.get('category')
 
         try:
+            if self.get_element_by_title_and_category(element_title, element_category) is None:
+                raise Exception(
+                    f'Could not find element with title "{element_title}" and category "{element_category}"'
+                )
             for key in self.elements_by_category:
                 if key.value == element_category:
                     self.elements_by_category[key] = [
                         elem for elem in self.elements_by_category[key]
                         if elem.title.value != element_title
                     ]
-                    break
             db.remove_from_json(element_title, element_category)
+            print(f"{element_title} removed")
             return jsonify({'success': True})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)})
@@ -136,13 +141,13 @@ class MyFlaskApp(Flask):
                        supercategory=supercategory.to_dict())
 
     def update_done(self):
+        print(request.get_json())
         element_title = request.get_json()['title']
         element_category = request.get_json()['category']
         is_done = request.get_json()['done']
         element = self.get_element_by_title_and_category(element_title,
                                                          element_category)
         if element:
-            print(request.get_json())
             db.update_element_check(element, is_done)
             return "OK", 200
         else:

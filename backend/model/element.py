@@ -7,8 +7,7 @@ from interface.displayable import Displayable, Category
 
 
 class Element(ABC):
-
-    def __init__(self, category, title, done=None):
+    def __init__(self, category, title, *, done=False):
         self.category = Category(category)
         self.title = Displayable(title)
         if done is None:
@@ -52,12 +51,9 @@ class Element(ABC):
 
 
 class Stackable(Element):
-    def __init__(self, category, title, done=None, stackable_properties=None):
-        super().__init__(category, title, done)
-        if stackable_properties is None:
-            self.stackable_properties = {}
-        else:
-            self.stackable_properties = stackable_properties
+    def __init__(self, category, title, stackable_properties, *, done=False):
+        super().__init__(category, title, done=done)
+        self.stackable_properties = stackable_properties
         self.constituent_stackables = []
 
     @property
@@ -120,9 +116,8 @@ class Stackable(Element):
 
 
 class Quest(Element):
-
-    def __init__(self, category, title, reward, solution, done=False):
-        super().__init__(category, title, done)
+    def __init__(self, category, title, reward, solution, *, done=False):
+        super().__init__(category, title, done=done)
         self.reward = Displayable(reward)
         self.solution = Displayable(solution)
         self._init_displayables()

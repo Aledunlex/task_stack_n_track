@@ -12,13 +12,23 @@ export const updateElement = async (title, category, done) => {
   return newDoneStatus;
 };
 
-export const deleteElement = async (title, category) => {
-  await axios.delete(`http://localhost:8080/api/deleteElement`, {
-    data: { title: title, category: category },
+export const removeElement = async (title, category) => {
+  try {
+  const response = await axios.delete(`http://localhost:8080/api/removeElement`, {
+    data: {
+      title: title,
+      category: category 
+    }
   });
+  
+  return response.data.success;
+  } catch (error) {
+    return error;
+  }
 };
 
-export const addElement = async (element) => { // ajouter supercategory?
+export const addElement = async (element) => {
   const response = await axios.post(`http://localhost:8080/api/addElement`, element);
+  alert(response.data.error);
   return response.data;
 };
