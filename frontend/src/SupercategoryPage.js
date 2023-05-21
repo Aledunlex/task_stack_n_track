@@ -10,7 +10,8 @@ import { updateElement, removeElement } from './services/elementService';
 
 const SupercategoryPage = () => {
   const [allElements, setAllElements] = useState([]);
-  const [viewStyle, setViewStyle] = useState('list'); // initial view style is 'list'
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [viewStyle, setViewStyle] = useState('list');
   const { supercategory } = useParams();
 
   useEffect(() => {
@@ -18,7 +19,7 @@ const SupercategoryPage = () => {
       const result = await axios(`http://localhost:8080/api/${supercategory}`);
       const allElements = result.data.all_elements;
       allElements.forEach(element => {
-        element.done = element.done === 'True';  // Convert 'done' to boolean
+        element.done = element.done === 'True';
       });
       setAllElements(allElements);
     };
@@ -30,7 +31,9 @@ const SupercategoryPage = () => {
     if (item.reward && item.solution) {
       return 'quest';
     }
-
+    if (item.stackable_properties) {
+      return 'stackable';
+    }
     return 'base';
   };
 
@@ -41,6 +44,31 @@ const SupercategoryPage = () => {
 
   // determine the class name based on the view style
   const viewStyleClass = viewStyle === 'list' ? 'list-view' : 'grid-view';
+
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category);
+  };
+
+  // Créez les boutons de catégorie :
+  const categoryButtons = allElements
+    .map((item) => item.category)
+    .filter((value, index, self) => self.indexOf(value) === index)
+    .map((category) => (
+      <button key={category} onClick={() => handleCategoryClick(category)}>
+        {category}
+      </button>
+    ));
+
+  categoryButtons.push(
+    <button key="all" onClick={() => handleCategoryClick(null)}>
+      Voir tout
+    </button>
+  );
+
+  // Filtrez la liste des éléments à afficher :
+  const elementsToDisplay = selectedCategory
+    ? allElements.filter((item) => item.category === selectedCategory)
+    : allElements;
 
   const handleCheck = async (title, category, done) => {
     const newDoneStatus = await updateElement(title, category, done);
@@ -75,10 +103,11 @@ const SupercategoryPage = () => {
   return (
     <div>
       <h1>{supercategory}</h1>
+      <div>{categoryButtons}</div>
       <button onClick={toggleViewStyle}>Switch to {viewStyle === 'list' ? 'Grid' : 'List'} View</button>
       <div className={viewStyleClass}>
         <NewElementForm supercategory={supercategory} addNewElement={addNewElement} />
-        {allElements.map((item) => {
+        {elementsToDisplay.map((item) => {
           const Component = componentMapping[getComponentName(item)];
           return <Component key={item.title} handleCheck={handleCheck} handleRemove={() => handleRemove(item.title, item.category)} {...item} />;
         })}

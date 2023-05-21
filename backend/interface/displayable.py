@@ -56,6 +56,15 @@ class Displayable:
         else:
             return self.value
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
 
 class Category(Displayable):
     def __init__(self, value):
@@ -75,8 +84,3 @@ class Category(Displayable):
     def to_dict(self):
         return {'value': self.value, 'background_color': self.background_color, 'text_color': self.get_text_color()}
 
-    def __eq__(self, other):
-        return self.value == other.value
-
-    def __hash__(self):
-        return hash(self.value)

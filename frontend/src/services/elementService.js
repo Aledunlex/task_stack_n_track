@@ -29,6 +29,5 @@ export const removeElement = async (title, category) => {
 
 export const addElement = async (element) => {
   const response = await axios.post(`http://localhost:8080/api/addElement`, element);
-  alert(response.data.error);
   return response.data;
 };

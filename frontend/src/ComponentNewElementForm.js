@@ -43,14 +43,46 @@ export const QuestElementForm = ({ onSubmit }) => {
 };
 
 export const StackableElementForm = ({ onSubmit }) => {
+  const [propertyName, setPropertyName] = useState('');
+  const [propertyValue, setPropertyValue] = useState('');
+  const [properties, setProperties] = useState({});
+
+  const handlePropertyNameChange = (event) => setPropertyName(event.target.value);
+  const handlePropertyValueChange = (event) => setPropertyValue(event.target.value);
+
+  const handleAddProperty = (event) => {
+    event.preventDefault();
+    setProperties({ ...properties, [propertyName]: propertyValue });
+    setPropertyName('');
+    setPropertyValue('');
+  };
+
+  const handleRemoveProperty = (propertyToRemove) => {
+    setProperties(Object.fromEntries(Object.entries(properties).filter(([property]) => property !== propertyToRemove)));
+  };
 
   const handleSubmit = (formData) => {
-    onSubmit({ ...formData, type:'stackable' });
+    onSubmit({ ...formData, type: 'stackable', stackable_properties: properties });
   };
 
   return (
     <BaseElementForm onSubmit={handleSubmit}>
-      <button type="submit">Add element</button>
+      <div>
+        <input type="text" value={propertyName} onChange={handlePropertyNameChange} placeholder="Property name" />
+        <input type="text" value={propertyValue} onChange={handlePropertyValueChange} placeholder="Property value" />
+        <button onClick={handleAddProperty}>Add property</button>
+      </div>
+      <ul>
+        {Object.entries(properties).map(([property, value]) => (
+          <li key={property}>
+            {property}: {value}
+            <button onClick={() => handleRemoveProperty(property)}>Remove</button>
+          </li>
+        ))}
+      </ul>
+      <button type="submit">Create Stackable</button>
     </BaseElementForm>
   );
 };
+
+

@@ -2,6 +2,8 @@ import os
 from abc import ABC, abstractmethod
 from typing import List
 
+from json import loads
+
 from db.db_handler import DATABASE, get_supercategories
 from interface.displayable import Displayable, Category
 
@@ -14,6 +16,15 @@ class Element(ABC):
             self.done = False
         else:
             self.done = done == 'True'
+
+    @staticmethod
+    def get_class_from_attributes(attribute_dict):
+        if 'stackable_properties' in attribute_dict:
+            return Stackable
+        elif 'reward' in attribute_dict and 'solution' in attribute_dict:
+            return Quest
+        else:
+            raise ValueError("Attributes do not match any known element class")
 
     def to_dict(self):
         return {
@@ -49,12 +60,31 @@ class Element(ABC):
         # the result of to_dict
         return f'{self.__class__.__name__}({self.to_dict()})'
 
+    def __repr__(self):
+        return str(self)
+
 
 class Stackable(Element):
     def __init__(self, category, title, stackable_properties, *, done=False):
         super().__init__(category, title, done=done)
-        self.stackable_properties = stackable_properties
+        if isinstance(stackable_properties, str):
+            stackable_properties = loads(stackable_properties)
+        self._stackable_properties = stackable_properties.copy()
         self.constituent_stackables = []
+
+    def to_dict(self):
+        # Pretty much the same as Element.to_dict, but include _stackable_properties instead of stackable_properties
+        obj_dict = {
+            attr: str(getattr(self, attr))
+            for attr in dir(self)
+            if not attr.startswith('__') and not callable(getattr(self, attr))
+               and not (isinstance(getattr(self, attr), ABC) or attr == '_abc_impl')
+               and attr != 'stackable_properties'
+               and attr != 'constituent_stackables'
+               and attr != '_stackable_properties'
+        }
+        obj_dict['stackable_properties'] = self._stackable_properties
+        return obj_dict
 
     @property
     def stackable_properties(self):
@@ -78,7 +108,7 @@ class Stackable(Element):
         if not isinstance(other, Stackable):
             raise ValueError("Can only stack with another Stackable")
         # Create a new Stackable that represents the combination
-        new_stackable = Stackable(self.category, self.title, self.done, self._stackable_properties.copy())
+        new_stackable = Stackable(self.category, self.title, self._stackable_properties.copy(), done=self.done)
         new_stackable.constituent_stackables = self.constituent_stackables + [other]
         return new_stackable
 
@@ -87,7 +117,7 @@ class Stackable(Element):
         if not isinstance(other, Stackable):
             raise ValueError("Can only unstack with another Stackable")
 
-        new_stackable = Stackable(self.category, self.title, self.done, self.stackable_properties.copy())
+        new_stackable = Stackable(self.category, self.title, self.stackable_properties.copy(), done=self.done)
         new_stackable.stack = self
 
         for prop, value in other.stackable_properties.items():
@@ -101,6 +131,7 @@ class Stackable(Element):
                 pass
 
         return new_stackable
+
 
     def _init_displayables(self):
         """Init each displayable attribute in order of appearance in the GUI"""

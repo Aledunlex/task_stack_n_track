@@ -1,11 +1,12 @@
+import json
 import os
 
 from db import db_handler as db
 from flask import Flask, jsonify, send_from_directory
-from flask_cors import CORS
 from flask import request
+from flask_cors import CORS
 from interface.displayable import Category
-from model.element import Quest, Stackable
+from model.element import Element
 
 
 class MyFlaskApp(Flask):
@@ -29,19 +30,34 @@ class MyFlaskApp(Flask):
         else:
             return send_from_directory(self.static_folder, 'index.html')
 
-    def load_data(self, supercategory, element_class):
+    def load_data(self, supercategory):
         """Load data for a specific supercategory."""
         if supercategory not in self.categories_by_supercategories:  # load data only if not already loaded
             path = os.path.join(db.DATABASE, supercategory.value)
             self.categories_by_supercategories[supercategory] = {}
+            # on itère sur chaque fichier dans "path", les ouvrir, et récupérer les éléments json qu'ils contiennent
             for filename in os.listdir(path):
+
                 category_name = filename.split('.json')[0]
                 category = Category(category_name)
-                elements = db.create_elements_from_json(element_class,
-                                                        supercategory.value,
-                                                        category_name)
-                self.categories_by_supercategories[supercategory][category] = elements
-                self.elements_by_category[category] = elements
+                with open(os.path.join(path, filename), 'r') as f:
+                    data = json.load(f)
+                    for attributes in data:
+                        # A Stackable's properties are handled with a special attribute
+                        if attributes.get("_stackable_properties") is not None:
+                            attributes["stackable_properties"] = attributes.pop("_stackable_properties")
+                        element_class = Element.get_class_from_attributes(attributes)
+                        created_element = element_class(**attributes)
+
+                        if category not in self.categories_by_supercategories[supercategory]:
+                            self.categories_by_supercategories[supercategory][category] = [created_element]
+                        else:
+                            self.categories_by_supercategories[supercategory][category].extend([created_element])
+
+                        if category not in self.elements_by_category:
+                            self.elements_by_category[category] = [created_element]
+                        else:
+                            self.elements_by_category[category].extend([created_element])
 
     def get_all_elements(self, supercategory):
         return [
@@ -68,34 +84,27 @@ class MyFlaskApp(Flask):
             supercategory = form_data.get('supercategory')
             attributes = {k: v for k, v in form_data.items() if k != 'supercategory'}
 
-            # Determine the class of the new element based on a query parameter
-            element_type = form_data.get('type')
-            if element_type == 'quest':
-                element_class = Quest
-            elif element_type == 'stackable':
-                element_class = Stackable
-            else:
-                # Default to creating a Quest if no valid element type is specified
-                element_class = Quest
-
             # Create a new Element object and set its attributes
             element_attributes = {
                 attr_name: attr_value
                 for attr_name, attr_value in attributes.items()
                 if (attr_name != "done" and attr_name != "type")
             }
+            # A Stackable's properties are handled with a special attribute
+            if element_attributes.get("_stackable_properties") is not None:
+                element_attributes["stackable_properties"] = element_attributes.pop("_stackable_properties")
+
+            element_class = Element.get_class_from_attributes(element_attributes)
             new_element = element_class(**element_attributes)
 
             # Add the new element to the list
-            current_elems_in_cat = self.elements_by_category.get(
-                new_element.category)
+            current_elems_in_cat = self.elements_by_category.get(new_element.category)
             if current_elems_in_cat is None or len(current_elems_in_cat) == 0:
                 self.elements_by_category[new_element.category] = [new_element]
             else:
                 new_element.category = current_elems_in_cat[0].category
                 current_elems_in_cat.append(new_element)
-                element_attributes.update(
-                    {"background_color": new_element.category.background_color})
+                element_attributes.update({"background_color": new_element.category.background_color})
             db.insert_new_element(new_element, supercategory)
             response = {'success': True, 'element': element_attributes}
             print(f"Response: {response}")
@@ -131,14 +140,15 @@ class MyFlaskApp(Flask):
 
     def index(self, supercategory):
         supercategory = Category(supercategory)
-        self.load_data(supercategory, Quest)
+        self.load_data(supercategory)
         all_elements = self.get_all_elements(supercategory)
-
+        print([e.to_dict() for e in all_elements])
         categories = list(set([element.category for element in all_elements]))
 
         print(f"{len(all_elements)} elements loaded")
-        return jsonify(all_elements=[e.to_dict() for e in all_elements], categories=[category.to_dict() for category in categories],
-                       supercategory=supercategory.to_dict())
+        return jsonify(all_elements=[e.to_dict() for e in all_elements],
+                       categories=[str(category) for category in categories],
+                       supercategory=str(supercategory))
 
     def update_done(self):
         print(request.get_json())
