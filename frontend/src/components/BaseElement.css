@@ -1,0 +1,46 @@
+.base-element {
+  width: 100%; 
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 10px;
+  position: relative;
+  box-sizing: border-box; 
+}
+
+/* le button delete-button prend un style différent de ceux de base */
+
+
+.base-element .delete-button {
+  position: absolute; /* Positionnement absolu par rapport à l'élément parent */
+  top: 0; /* Ajustez selon votre goût */
+  right: 0; /* Ajustez selon votre goût */
+  width: auto; /* Ajustez selon votre goût */
+  margin: 10px; /* Ajustez cette valeur pour que le bouton "Delete" soit aussi "paddé" que le reste du contenu */
+  background-color: #f44336; /* Couleur de fond du bouton */
+}
+
+.base-element .checkbox {
+  display: inline-block; /* Pour que la checkbox et le texte soient sur la même ligne */
+}
+
+/* Ajout pour la mise en page du titre et de la checkbox "Done" */
+.base-element .title-and-done {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title-attribute, .text-attribute {
+  align-self: stretch;  /* permet au contenu de prendre toute la largeur du conteneur */
+  border-bottom: 1px solid #ccc;  /* ajustez la couleur et la taille de la bordure selon vos préférences */
+  padding-bottom: 8px; /* ajustez la taille de l'espacement sous la bordure selon vos préférences */
+}
+
+.stackable_properties-attribute td {
+  padding-right: 20px;
+}

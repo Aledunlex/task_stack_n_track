@@ -4,14 +4,16 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 
 import './SupercategoryPage.css';
-import NewElementForm from './NewElementForm';
-import componentMapping from './componentMapping';
-import { updateElement, removeElement } from './services/elementService';
+import NewElementForm from '../components/NewElementForm';
+import componentMapping from '../components/componentMapping';
+import Workbench from '../components/Workbench';
+import { updateElement, removeElement } from '../services/elementService';
 
 const SupercategoryPage = () => {
   const [allElements, setAllElements] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [viewStyle, setViewStyle] = useState('list');
+  const [workbenchItems, setWorkbenchItems] = useState([]);
   const { supercategory } = useParams();
 
   useEffect(() => {
@@ -105,13 +107,14 @@ const SupercategoryPage = () => {
       <h1>{supercategory}</h1>
       <div>{categoryButtons}</div>
       <button onClick={toggleViewStyle}>Switch to {viewStyle === 'list' ? 'Grid' : 'List'} View</button>
+      <NewElementForm supercategory={supercategory} addNewElement={addNewElement} />
       <div className={viewStyleClass}>
-        <NewElementForm supercategory={supercategory} addNewElement={addNewElement} />
         {elementsToDisplay.map((item) => {
           const Component = componentMapping[getComponentName(item)];
           return <Component key={item.title} handleCheck={handleCheck} handleRemove={() => handleRemove(item.title, item.category)} {...item} />;
         })}
       </div>
+      <Workbench workbenchItems={workbenchItems} setWorkbenchItems={setWorkbenchItems} />
     </div>
   );
   

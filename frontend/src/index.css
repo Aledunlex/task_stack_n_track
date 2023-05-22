@@ -1,13 +1,43 @@
 body {
-  margin: 0;
+  margin: 16px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f2f2f2; /* Couleur de fond légère pour le body */
+  color: #333333; /* Couleur de texte foncée pour un meilleur contraste */
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Styles pour tous les éléments <h1> */
+h1 {
+  color: #020091; /* Couleur du titre */
+  text-align: center; /* Centre les titres */
+}
+
+/* Styles pour tous les éléments <button> */
+button {
+  background-color: #4CAF50; /* Couleur de fond du bouton */
+  border: none; /* Supprime la bordure par défaut */
+  color: white; /* Couleur du texte */
+  text-align: center; /* Centre le texte */
+  text-decoration: none; /* Supprime le soulignement */
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  transition-duration: 0.4s; /* Durée de l'effet de survol */
+  cursor: pointer;
+  padding: 10px 24px; /* Espacement interne pour augmenter la taille des boutons */
+  border-radius: 8px; /* Bords arrondis */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Effet d'ombre */
+}
+
+/* Styles pour les boutons lors du survol */
+button:hover {
+  background-color: #45a049; /* Changement de couleur de fond lors du survol */
 }

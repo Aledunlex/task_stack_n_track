@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 
+import './HomePage.css';
+
 const HomePage = () => {
   const [data, setData] = useState([]);
 
@@ -18,10 +20,10 @@ const HomePage = () => {
   
   return (
     <div>
-      <h1>Home Page</h1>
+      <h1>Supercatégories</h1>
       {data.map(item => (
         <div key={item.value}>
-          <Link to={`/${item.value}`}>{item.value}</Link>
+          <Link to={`/${item.value}`} className="link-button">{item.value}</Link>
         </div>
       ))}
     </div>

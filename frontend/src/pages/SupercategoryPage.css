@@ -1,0 +1,47 @@
+.grid-view {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.grid-view > div {
+  margin: 10px;
+  flex: 1 0 calc(20.00% - 20px);
+}
+
+body {
+  margin-bottom: 325px; /* Ajout d'une marge en bas de la page */
+}
+
+.workbench {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 300px;
+  padding-right: 25px;
+  overflow-y: scroll;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box; 
+  background-color: #fffdfd;
+  z-index: 9999;
+  transition: transform .3s ease-in-out;
+  text-align: center; /* Centrage horizontal du bouton */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none;
+}
+
+.toggle-workbench {
+ background-color: #a8a8a8; /* Couleur de fond du bouton */
+}
+
+.toggle-workbench:hover {
+ background-color: #8b8b8b; /* Changement de couleur de fond lors du survol */
+}
+
+.workbench--hidden {
+ transform: translateY(82%);
+}

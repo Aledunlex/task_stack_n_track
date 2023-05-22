@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { addElement } from './services/elementService';
+import { addElement } from '../services/elementService';
 import { QuestElementForm, StackableElementForm } from './ComponentNewElementForm';
 
 const NewElementForm = ({ supercategory, addNewElement }) => {

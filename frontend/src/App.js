@@ -3,8 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-import HomePage from './HomePage';
-import SupercategoryPage from './SupercategoryPage';
+import HomePage from './pages/HomePage';
+import SupercategoryPage from './pages/SupercategoryPage';
 
 function App() {
   return (

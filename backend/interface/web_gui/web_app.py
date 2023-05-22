@@ -21,8 +21,8 @@ class MyFlaskApp(Flask):
         self.route('/api/supercategories')(self.supercategories)
         self.route('/api/<supercategory>')(self.index)
         self.route('/api/updateElement', methods=['PUT'])(self.update_done)
-        self.route('/', defaults={'path': ''})(self.serve)
-        self.route('/<path:path>')(self.serve)
+        self.route('/<path:path>', defaults={'path': ''})(self.serve)
+
 
     def serve(self, path):
         if path != "" and os.path.exists(os.path.join(self.static_folder, path)):
@@ -32,32 +32,34 @@ class MyFlaskApp(Flask):
 
     def load_data(self, supercategory):
         """Load data for a specific supercategory."""
-        if supercategory not in self.categories_by_supercategories:  # load data only if not already loaded
-            path = os.path.join(db.DATABASE, supercategory.value)
-            self.categories_by_supercategories[supercategory] = {}
-            # on itère sur chaque fichier dans "path", les ouvrir, et récupérer les éléments json qu'ils contiennent
-            for filename in os.listdir(path):
+        path = os.path.join(db.DATABASE, supercategory.value)
+        self.categories_by_supercategories[supercategory] = {}
+        # on itère sur chaque fichier dans "path", les ouvrir, et récupérer les éléments json qu'ils contiennent
+        for filename in os.listdir(path):
 
-                category_name = filename.split('.json')[0]
-                category = Category(category_name)
-                with open(os.path.join(path, filename), 'r') as f:
-                    data = json.load(f)
-                    for attributes in data:
-                        # A Stackable's properties are handled with a special attribute
-                        if attributes.get("_stackable_properties") is not None:
-                            attributes["stackable_properties"] = attributes.pop("_stackable_properties")
-                        element_class = Element.get_class_from_attributes(attributes)
-                        created_element = element_class(**attributes)
+            category_name = filename.split('.json')[0]
+            category = Category(category_name)
+            with open(os.path.join(path, filename), 'r') as f:
+                data = json.load(f)
+                for content in data:
+                    # A Stackable's properties are handled with a special attribute
+                    if content.get("_stackable_properties") is not None:
+                        content["stackable_properties"] = content.pop("_stackable_properties")
 
-                        if category not in self.categories_by_supercategories[supercategory]:
-                            self.categories_by_supercategories[supercategory][category] = [created_element]
-                        else:
-                            self.categories_by_supercategories[supercategory][category].extend([created_element])
+                    element_class = Element.get_class_from_attributes(content)
+                    created_element = element_class(**content)
 
-                        if category not in self.elements_by_category:
-                            self.elements_by_category[category] = [created_element]
-                        else:
-                            self.elements_by_category[category].extend([created_element])
+                    if category not in self.categories_by_supercategories[supercategory]:
+                        self.categories_by_supercategories[supercategory][category] = [created_element]
+                    else:
+                        self.categories_by_supercategories[supercategory][category].extend([created_element])
+
+                    if category not in self.elements_by_category:
+                        self.elements_by_category[category] = [created_element]
+                    elif created_element not in self.elements_by_category[category]:
+                        self.elements_by_category[category].extend([created_element])
+                    else:
+                        print(f"Element {created_element.title} already exists in category {category}")
 
     def get_all_elements(self, supercategory):
         return [
@@ -142,7 +144,6 @@ class MyFlaskApp(Flask):
         supercategory = Category(supercategory)
         self.load_data(supercategory)
         all_elements = self.get_all_elements(supercategory)
-        print([e.to_dict() for e in all_elements])
         categories = list(set([element.category for element in all_elements]))
 
         print(f"{len(all_elements)} elements loaded")
@@ -169,5 +170,5 @@ def main():
     CORS(app)
     app.run(host='localhost',
             port=int(os.environ.get('PORT', 8080)),
-            debug=True,
+            debug=False,
             use_reloader=False)
